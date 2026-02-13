@@ -25,7 +25,8 @@ export default function WelcomeScreen({ onComplete }: { onComplete: () => void }
     return (
       <View style={[s.container, { backgroundColor: colors.bg }]}>
         <Text style={{ fontSize: 64, textAlign: 'center', marginBottom: 16 }}>⚡</Text>
-        <Text style={[s.title, { color: colors.neonGreen }]}>Welcome to Buzz Check!</Text>
+        <Text style={[s.title, { color: colors.neonGreen }]}>L.I.D</Text>
+        <Text style={{ fontSize: fonts.sizes.md, color: colors.textSecondary, textAlign: 'center', marginBottom: 8, lineHeight: 24, fontStyle: 'italic' }}>Li-quid I drank</Text>
         <Text style={{ fontSize: fonts.sizes.md, color: colors.textSecondary, textAlign: 'center', marginBottom: 40, lineHeight: 24 }}>Your daily fuel tracker. Post your coffees, energy drinks, protein shakes — and see what your friends are drinking.</Text>
         <TouchableOpacity style={[s.button, { backgroundColor: colors.neonGreen }]} onPress={() => setStep(1)}>
           <Text style={{ color: colors.bg, fontSize: fonts.sizes.lg, fontWeight: '800', letterSpacing: 1 }}>LET'S GO</Text>

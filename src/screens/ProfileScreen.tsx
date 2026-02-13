@@ -330,7 +330,7 @@ export default function ProfileScreen() {
               } else {
                 try {
                   const { Share } = require('react-native');
-                  await Share.share({ message: `Join me on Buzz Check! ⚡ ${link}` });
+                  await Share.share({ message: `Join me on L.I.D! 🥤 ${link}` });
                 } catch { setEditMsg(link); }
               }
             }}>
