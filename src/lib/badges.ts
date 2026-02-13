@@ -38,17 +38,19 @@ export async function checkAndAwardBadges(userId: string) {
   const { data: existing } = await supabase.from('bc_badges').select('badge_type, badge_name').eq('user_id', userId);
   const has = (type: string, name: string) => existing?.some(b => b.badge_type === type && b.badge_name === name);
 
+  const awarded: string[] = [];
   const award = async (type: string, name: string) => {
-    if (has(type, name)) return;
-    // Double-check in DB to avoid duplicates
-    const { data: check } = await supabase.from('bc_badges').select('id').eq('user_id', userId).eq('badge_type', type).eq('badge_name', name).limit(1);
-    if (check && check.length > 0) return;
+    const key = `${type}:${name}`;
+    if (has(type, name) || awarded.includes(key)) return;
     const def = BADGE_DEFS.find(d => d.type === type && d.name === name);
-    const { error } = await supabase.from('bc_badges').insert({
-      user_id: userId, badge_type: type, badge_name: name,
-      metadata: { desc: def?.desc || '', emoji: def?.emoji || '🏅' },
-    });
-    if (error) console.error('Badge award error:', error);
+    try {
+      const { error } = await supabase.from('bc_badges').insert({
+        user_id: userId, badge_type: type, badge_name: name,
+        metadata: { desc: def?.desc || '', emoji: def?.emoji || '🏅' },
+      });
+      if (!error) awarded.push(key);
+      else console.error('Badge award error:', type, name, error);
+    } catch (e) { console.error('Badge award exception:', e); }
   };
 
   // Fetch user's posts
