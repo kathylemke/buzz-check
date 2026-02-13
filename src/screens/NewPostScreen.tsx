@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ScrollView, Image, Switch } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Image, Switch, Platform } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { useTheme } from '../contexts/ThemeContext';
 import { fonts } from '../theme';
@@ -50,7 +50,7 @@ export default function NewPostScreen({ navigation }: any) {
   const drinkName = product && finalFlavor ? `${product} - ${finalFlavor}` : product || brand || '';
 
   const handlePost = async () => {
-    if (!brand) { Alert.alert('Pick a brand first'); return; }
+    if (!brand) { if (Platform.OS === 'web') window.alert('Pick a brand first'); else alert('Pick a brand first'); return; }
     setPosting(true);
     try {
       let photo_url = null;
@@ -77,11 +77,10 @@ export default function NewPostScreen({ navigation }: any) {
       if (error) throw error;
       // Check badges in background
       checkAndAwardBadges(user!.id).catch(() => {});
-      Alert.alert('Posted! ⚡', 'Your buzz has been checked.');
       reset();
       navigation.navigate('Feed');
     } catch (err: any) {
-      Alert.alert('Error', err.message);
+      if (Platform.OS === 'web') window.alert('Error: ' + err.message); else alert('Error: ' + err.message);
     } finally { setPosting(false); }
   };
 
