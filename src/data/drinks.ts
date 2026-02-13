@@ -551,7 +551,7 @@ export const DRINK_BRANDS: DrinkBrand[] = [
   },
   {
     name: 'Truvani', category: 'supplements', products: [
-      { name: 'Plant Based Protein', flavors: ['Chocolate', 'Vanilla', 'Peanut Butter Chocolate', 'Chocolate Peanut Butter', 'Chocolate Banana', 'Vanilla Chai', 'Berry', 'Banana Cinnamon', 'Pumpkin Spice', 'Lemon Bar', 'Cookies & Cream', 'Birthday Cake', 'Unflavored'] },
+      { name: 'Plant Based Protein', flavors: ['Chocolate', 'Vanilla', 'Matcha', 'Peanut Butter Chocolate', 'Chocolate Peanut Butter', 'Chocolate Banana', 'Vanilla Chai', 'Berry', 'Banana Cinnamon', 'Pumpkin Spice', 'Lemon Bar', 'Cookies & Cream', 'Birthday Cake', 'Unflavored'] },
       { name: 'Marine Collagen', flavors: ['Unflavored'] },
       { name: 'Turmeric', flavors: ['Original'] },
     ],
