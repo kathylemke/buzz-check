@@ -68,11 +68,9 @@ export default function NewPostScreen({ navigation }: any) {
       }
       const postData: any = {
         user_id: user!.id, drink_name: drinkName, drink_type: category, brand, flavor: finalFlavor || null,
-        caption: caption.trim() || null, photo_url, rating: rating || null,
+        caption: caption.trim() || null, photo_url,
       };
-      // Only include these if the columns exist (migration may not have run yet)
-      if (isPrivate) postData.is_private = true;
-      if (city) postData.city = city;
+      // Note: city and is_private columns may not exist yet — omit to avoid errors
       const { error } = await supabase.from('bc_posts').insert(postData);
       if (error) throw error;
       // Check badges in background
