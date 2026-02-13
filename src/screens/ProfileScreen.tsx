@@ -5,7 +5,7 @@ import { fonts, drinkTypeEmoji, drinkTypeLabels } from '../theme';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { getUserBadges, BADGE_DEFS } from '../lib/badges';
-import { CITIES } from '../data/cities';
+import { getAllCities } from '../data/cities';
 
 type Post = { id: string; drink_name: string; drink_type: string; brand: string | null; photo_url: string | null; created_at: string };
 type Badge = { badge_type: string; badge_name: string; badge_desc: string; earned_at: string };
@@ -118,16 +118,8 @@ export default function ProfileScreen() {
             )}
             <Text style={{ color: colors.text, fontSize: fonts.sizes.xl, fontWeight: '800' }}>{profile?.display_name ?? profile?.username ?? '...'}</Text>
             <Text style={{ color: colors.textSecondary, fontSize: fonts.sizes.md, marginTop: 2 }}>@{profile?.username}</Text>
-            {profile?.campus && <Text style={{ color: colors.textMuted, fontSize: fonts.sizes.sm, marginTop: 4 }}>📍 {profile.campus}</Text>}
-
-            {/* City picker */}
-            <View style={{ flexDirection: 'row', gap: 8, marginTop: 12 }}>
-              {CITIES.map(c => (
-                <TouchableOpacity key={c} onPress={() => updateCity(c)} style={{ paddingHorizontal: 12, paddingVertical: 6, borderRadius: 16, backgroundColor: profile?.city === c ? colors.electricBlue + '22' : colors.surface, borderWidth: 1, borderColor: profile?.city === c ? colors.electricBlue : colors.cardBorder }}>
-                  <Text style={{ color: profile?.city === c ? colors.electricBlue : colors.textMuted, fontWeight: '600', fontSize: 12 }}>{c}</Text>
-                </TouchableOpacity>
-              ))}
-            </View>
+            {profile?.campus && <Text style={{ color: colors.textMuted, fontSize: fonts.sizes.sm, marginTop: 4 }}>🎓 {profile.campus}</Text>}
+            {profile?.city && <Text style={{ color: colors.electricBlue, fontSize: fonts.sizes.xs, marginTop: 2 }}>📍 {profile.city}</Text>}
 
             <View style={{ flexDirection: 'row', marginTop: 20, gap: 16 }}>
               <StatBox label="Today" value={stats.today} period="today" />
