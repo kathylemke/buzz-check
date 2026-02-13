@@ -1,55 +1,31 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { View, Text, FlatList, Image, StyleSheet, TouchableOpacity, RefreshControl, Modal, ScrollView, Dimensions } from 'react-native';
-import { colors, fonts, drinkTypeEmoji, drinkTypeLabels } from '../theme';
+import { useTheme } from '../contexts/ThemeContext';
+import { fonts, drinkTypeEmoji, drinkTypeLabels } from '../theme';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
+import { getUserBadges, BADGE_DEFS } from '../lib/badges';
+import { CITIES } from '../data/cities';
 
-type UserProfile = { username: string; display_name: string | null; campus: string | null; avatar_url: string | null };
 type Post = { id: string; drink_name: string; drink_type: string; brand: string | null; photo_url: string | null; created_at: string };
-
-type BreakdownData = {
-  title: string;
-  byType: Record<string, number>;
-  byBrand: [string, number][];
-  byProduct: [string, number][];
-};
-
-function computeBreakdown(posts: Post[], title: string, filter?: (p: Post) => boolean): BreakdownData {
-  const filtered = filter ? posts.filter(filter) : posts;
-
-  const byType: Record<string, number> = {};
-  const brandMap: Record<string, number> = {};
-  const productMap: Record<string, number> = {};
-
-  for (const p of filtered) {
-    byType[p.drink_type] = (byType[p.drink_type] || 0) + 1;
-    const brand = p.brand || 'Unknown';
-    brandMap[brand] = (brandMap[brand] || 0) + 1;
-    productMap[p.drink_name] = (productMap[p.drink_name] || 0) + 1;
-  }
-
-  const byBrand = Object.entries(brandMap).sort((a, b) => b[1] - a[1]);
-  const byProduct = Object.entries(productMap).sort((a, b) => b[1] - a[1]);
-
-  return { title, byType, byBrand, byProduct };
-}
+type Badge = { badge_type: string; badge_name: string; badge_desc: string; earned_at: string };
 
 export default function ProfileScreen() {
   const { user, signOut } = useAuth();
-  const [profile, setProfile] = useState<UserProfile | null>(null);
+  const { colors, mode, toggle } = useTheme();
+  const [profile, setProfile] = useState<any>(null);
   const [posts, setPosts] = useState<Post[]>([]);
+  const [badges, setBadges] = useState<Badge[]>([]);
   const [stats, setStats] = useState({ today: 0, week: 0, allTime: 0 });
   const [refreshing, setRefreshing] = useState(false);
-  const [breakdown, setBreakdown] = useState<BreakdownData | null>(null);
+  const [breakdown, setBreakdown] = useState<any>(null);
 
   const fetchData = useCallback(async () => {
     if (!user) return;
-
     const [profileRes, postsRes] = await Promise.all([
       supabase.from('bc_users').select('*').eq('id', user.id).single(),
       supabase.from('bc_posts').select('*').eq('user_id', user.id).order('created_at', { ascending: false }),
     ]);
-
     if (profileRes.data) setProfile(profileRes.data);
     if (postsRes.data) {
       setPosts(postsRes.data);
@@ -62,41 +38,54 @@ export default function ProfileScreen() {
         allTime: postsRes.data.length,
       });
     }
+    const b = await getUserBadges(user.id);
+    setBadges(b);
   }, [user]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
-
   const onRefresh = async () => { setRefreshing(true); await fetchData(); setRefreshing(false); };
+
+  const updateCity = async (c: string) => {
+    if (!user) return;
+    await supabase.from('bc_users').update({ city: c }).eq('id', user.id);
+    setProfile((p: any) => p ? { ...p, city: c } : p);
+  };
 
   const openBreakdown = (period: 'today' | 'week' | 'allTime') => {
     const now = new Date();
     const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
     const startOfWeek = new Date(now.getTime() - 7 * 86400000).toISOString();
-
-    const config = {
+    const config: any = {
       today: { title: "Today's Breakdown", filter: (p: Post) => p.created_at >= startOfDay },
-      week: { title: "This Week's Breakdown", filter: (p: Post) => p.created_at >= startOfWeek },
-      allTime: { title: "All Time Breakdown", filter: undefined },
+      week: { title: "This Week", filter: (p: Post) => p.created_at >= startOfWeek },
+      allTime: { title: "All Time", filter: undefined },
     }[period];
-
-    setBreakdown(computeBreakdown(posts, config.title, config.filter));
+    const filtered = config.filter ? posts.filter(config.filter) : posts;
+    const byType: Record<string, number> = {};
+    const brandMap: Record<string, number> = {};
+    for (const p of filtered) {
+      byType[p.drink_type] = (byType[p.drink_type] || 0) + 1;
+      const b = p.brand || 'Unknown';
+      brandMap[b] = (brandMap[b] || 0) + 1;
+    }
+    setBreakdown({ title: config.title, byType, byBrand: Object.entries(brandMap).sort((a, b) => b[1] - a[1]) });
   };
 
-  const StatBox = ({ label, value, period }: { label: string; value: number; period: 'today' | 'week' | 'allTime' }) => (
-    <TouchableOpacity style={s.statBox} onPress={() => openBreakdown(period)} activeOpacity={0.7}>
-      <Text style={s.statValue}>{value}</Text>
-      <Text style={s.statLabel}>{label}</Text>
+  const StatBox = ({ label, value, period }: any) => (
+    <TouchableOpacity style={[ss.statBox, { backgroundColor: colors.card, borderColor: colors.cardBorder }]} onPress={() => openBreakdown(period)} activeOpacity={0.7}>
+      <Text style={{ color: colors.neonGreen, fontSize: fonts.sizes.xl, fontWeight: '900' }}>{value}</Text>
+      <Text style={{ color: colors.textSecondary, fontSize: fonts.sizes.xs, marginTop: 4 }}>{label}</Text>
     </TouchableOpacity>
   );
 
   const renderPost = ({ item }: { item: Post }) => (
-    <View style={s.gridItem}>
+    <View style={ss.gridItem}>
       {item.photo_url ? (
-        <Image source={{ uri: item.photo_url }} style={s.gridImage} />
+        <Image source={{ uri: item.photo_url }} style={[ss.gridImage, { backgroundColor: colors.surface }]} />
       ) : (
-        <View style={[s.gridImage, s.gridPlaceholder]}>
+        <View style={[ss.gridImage, ss.gridPlaceholder, { backgroundColor: colors.surface }]}>
           <Text style={{ fontSize: 28 }}>{drinkTypeEmoji[item.drink_type] ?? '🥤'}</Text>
-          <Text style={s.gridDrinkName} numberOfLines={2}>{item.drink_name}</Text>
+          <Text style={{ color: colors.textMuted, fontSize: fonts.sizes.xs, textAlign: 'center', marginTop: 4 }} numberOfLines={2}>{item.drink_name}</Text>
         </View>
       )}
     </View>
@@ -107,29 +96,78 @@ export default function ProfileScreen() {
   return (
     <>
       <FlatList
-        style={s.container}
+        style={{ flex: 1, backgroundColor: colors.bg }}
         data={posts}
-        keyExtractor={(item) => item.id}
+        keyExtractor={item => item.id}
         numColumns={3}
         renderItem={renderPost}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.neonGreen} />}
         ListHeaderComponent={
-          <View style={s.header}>
-            <View style={s.avatar}>
-              <Text style={s.avatarText}>{profile?.username?.[0]?.toUpperCase() ?? '?'}</Text>
-            </View>
-            <Text style={s.displayName}>{profile?.display_name ?? profile?.username ?? '...'}</Text>
-            <Text style={s.username}>@{profile?.username}</Text>
-            {profile?.campus && <Text style={s.campus}>📍 {profile.campus}</Text>}
+          <View style={{ alignItems: 'center', paddingTop: 60, paddingBottom: 20, paddingHorizontal: 16 }}>
+            {/* Theme toggle */}
+            <TouchableOpacity onPress={toggle} style={{ position: 'absolute', top: 60, right: 16 }}>
+              <Text style={{ fontSize: 24 }}>{mode === 'dark' ? '☀️' : '🌙'}</Text>
+            </TouchableOpacity>
 
-            <View style={s.statsRow}>
+            {profile?.avatar_url ? (
+              <Image source={{ uri: profile.avatar_url }} style={[ss.avatar, { backgroundColor: colors.electricBlue }]} />
+            ) : (
+              <View style={[ss.avatar, { backgroundColor: colors.electricBlue }]}>
+                <Text style={{ color: colors.bg, fontWeight: '900', fontSize: 32 }}>{profile?.username?.[0]?.toUpperCase() ?? '?'}</Text>
+              </View>
+            )}
+            <Text style={{ color: colors.text, fontSize: fonts.sizes.xl, fontWeight: '800' }}>{profile?.display_name ?? profile?.username ?? '...'}</Text>
+            <Text style={{ color: colors.textSecondary, fontSize: fonts.sizes.md, marginTop: 2 }}>@{profile?.username}</Text>
+            {profile?.campus && <Text style={{ color: colors.textMuted, fontSize: fonts.sizes.sm, marginTop: 4 }}>📍 {profile.campus}</Text>}
+
+            {/* City picker */}
+            <View style={{ flexDirection: 'row', gap: 8, marginTop: 12 }}>
+              {CITIES.map(c => (
+                <TouchableOpacity key={c} onPress={() => updateCity(c)} style={{ paddingHorizontal: 12, paddingVertical: 6, borderRadius: 16, backgroundColor: profile?.city === c ? colors.electricBlue + '22' : colors.surface, borderWidth: 1, borderColor: profile?.city === c ? colors.electricBlue : colors.cardBorder }}>
+                  <Text style={{ color: profile?.city === c ? colors.electricBlue : colors.textMuted, fontWeight: '600', fontSize: 12 }}>{c}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            <View style={{ flexDirection: 'row', marginTop: 20, gap: 16 }}>
               <StatBox label="Today" value={stats.today} period="today" />
               <StatBox label="This Week" value={stats.week} period="week" />
               <StatBox label="All Time" value={stats.allTime} period="allTime" />
             </View>
 
-            <TouchableOpacity style={s.signOutBtn} onPress={signOut}>
-              <Text style={s.signOutText}>Sign Out</Text>
+            {/* Badges */}
+            {badges.length > 0 && (
+              <View style={{ width: '100%', marginTop: 20 }}>
+                <Text style={{ color: colors.electricBlue, fontSize: fonts.sizes.sm, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 }}>Badges</Text>
+                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+                  {badges.map((b, i) => {
+                    const def = BADGE_DEFS.find(d => d.type === b.badge_type && d.name === b.badge_name);
+                    return (
+                      <View key={i} style={{ backgroundColor: colors.card, borderRadius: 12, padding: 10, alignItems: 'center', width: 80, borderWidth: 1, borderColor: colors.cardBorder }}>
+                        <Text style={{ fontSize: 24 }}>{def?.emoji || '🏅'}</Text>
+                        <Text style={{ color: colors.text, fontSize: 10, fontWeight: '700', textAlign: 'center', marginTop: 4 }} numberOfLines={2}>{b.badge_name}</Text>
+                      </View>
+                    );
+                  })}
+                </View>
+              </View>
+            )}
+
+            {/* Unearned badges */}
+            <View style={{ width: '100%', marginTop: 16 }}>
+              <Text style={{ color: colors.textMuted, fontSize: fonts.sizes.xs, fontWeight: '600', marginBottom: 8 }}>LOCKED BADGES</Text>
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+                {BADGE_DEFS.filter(d => !badges.some(b => b.badge_type === d.type && b.badge_name === d.name)).map((d, i) => (
+                  <View key={i} style={{ backgroundColor: colors.surface, borderRadius: 12, padding: 10, alignItems: 'center', width: 80, opacity: 0.4 }}>
+                    <Text style={{ fontSize: 24 }}>🔒</Text>
+                    <Text style={{ color: colors.textMuted, fontSize: 10, fontWeight: '600', textAlign: 'center', marginTop: 4 }} numberOfLines={2}>{d.name}</Text>
+                  </View>
+                ))}
+              </View>
+            </View>
+
+            <TouchableOpacity style={{ marginTop: 20, paddingVertical: 8, paddingHorizontal: 20 }} onPress={signOut}>
+              <Text style={{ color: colors.danger, fontSize: fonts.sizes.sm, fontWeight: '600' }}>Sign Out</Text>
             </TouchableOpacity>
           </View>
         }
@@ -137,64 +175,32 @@ export default function ProfileScreen() {
       />
 
       <Modal visible={breakdown !== null} transparent animationType="slide" onRequestClose={() => setBreakdown(null)}>
-        <View style={s.modalOverlay}>
-          <View style={s.modalContent}>
-            <View style={s.modalHeader}>
-              <Text style={s.modalTitle}>{breakdown?.title}</Text>
-              <TouchableOpacity onPress={() => setBreakdown(null)} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
-                <Text style={s.modalClose}>✕</Text>
-              </TouchableOpacity>
+        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'flex-end' }}>
+          <View style={{ backgroundColor: colors.bg, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 20, paddingBottom: 40, borderTopWidth: 1, borderColor: colors.cardBorder }}>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 16 }}>
+              <Text style={{ color: colors.text, fontSize: 18, fontWeight: '800' }}>{breakdown?.title}</Text>
+              <TouchableOpacity onPress={() => setBreakdown(null)}><Text style={{ color: colors.textSecondary, fontSize: 20 }}>✕</Text></TouchableOpacity>
             </View>
-
-            <ScrollView style={s.modalScroll} showsVerticalScrollIndicator={false}>
-              {/* By Type */}
-              <Text style={s.sectionTitle}>By Type</Text>
-              <View style={s.sectionCard}>
-                {typeKeys.map((key) => {
-                  const count = breakdown?.byType[key] || 0;
-                  return (
-                    <View key={key} style={s.breakdownRow}>
-                      <Text style={s.breakdownLabel}>{drinkTypeLabels[key] || key}</Text>
-                      <Text style={[s.breakdownCount, count > 0 && s.breakdownCountActive]}>{count}</Text>
+            <ScrollView style={{ maxHeight: 400 }}>
+              <Text style={{ color: colors.electricBlue, fontSize: 12, fontWeight: '700', marginBottom: 8 }}>BY TYPE</Text>
+              {typeKeys.map(k => (
+                <View key={k} style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 8 }}>
+                  <Text style={{ color: colors.text }}>{drinkTypeLabels[k]}</Text>
+                  <Text style={{ color: (breakdown?.byType[k] || 0) > 0 ? colors.neonGreen : colors.textMuted, fontWeight: '800' }}>{breakdown?.byType[k] || 0}</Text>
+                </View>
+              ))}
+              {breakdown?.byBrand?.length > 0 && (
+                <>
+                  <Text style={{ color: colors.electricBlue, fontSize: 12, fontWeight: '700', marginTop: 16, marginBottom: 8 }}>TOP BRANDS</Text>
+                  {breakdown.byBrand.slice(0, 10).map(([brand, count]: any, i: number) => (
+                    <View key={brand} style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 8 }}>
+                      <Text style={{ color: colors.text }}>{i + 1}. {brand}</Text>
+                      <Text style={{ color: colors.electricBlue, fontWeight: '800' }}>{count}</Text>
                     </View>
-                  );
-                })}
-              </View>
-
-              {/* Top Brands */}
-              <Text style={s.sectionTitle}>Top Brands</Text>
-              <View style={s.sectionCard}>
-                {breakdown?.byBrand.length === 0 && <Text style={s.emptyText}>No data yet</Text>}
-                {breakdown?.byBrand.slice(0, 10).map(([brand, count], i) => (
-                  <View key={brand} style={s.breakdownRow}>
-                    <Text style={s.breakdownLabel}>
-                      <Text style={s.rankNumber}>{i + 1}. </Text>{brand}
-                    </Text>
-                    <Text style={[s.breakdownCount, s.breakdownCountBrand]}>{count}</Text>
-                  </View>
-                ))}
-              </View>
-
-              {/* Top Products */}
-              <Text style={s.sectionTitle}>Top Products</Text>
-              <View style={s.sectionCard}>
-                {breakdown?.byProduct.length === 0 && <Text style={s.emptyText}>No data yet</Text>}
-                {breakdown?.byProduct.slice(0, 10).map(([product, count], i) => (
-                  <View key={product} style={s.breakdownRow}>
-                    <Text style={s.breakdownLabel} numberOfLines={1}>
-                      <Text style={s.rankNumber}>{i + 1}. </Text>{product}
-                    </Text>
-                    <Text style={[s.breakdownCount, s.breakdownCountProduct]}>{count}</Text>
-                  </View>
-                ))}
-              </View>
-
-              <View style={{ height: 20 }} />
+                  ))}
+                </>
+              )}
             </ScrollView>
-
-            <TouchableOpacity style={s.dismissBtn} onPress={() => setBreakdown(null)}>
-              <Text style={s.dismissText}>Dismiss</Text>
-            </TouchableOpacity>
           </View>
         </View>
       </Modal>
@@ -202,47 +208,10 @@ export default function ProfileScreen() {
   );
 }
 
-const screenHeight = Dimensions.get('window').height;
-
-const s = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.bg },
-  header: { alignItems: 'center', paddingTop: 60, paddingBottom: 20, paddingHorizontal: 16 },
-  avatar: { width: 80, height: 80, borderRadius: 40, backgroundColor: colors.electricBlue, justifyContent: 'center', alignItems: 'center', marginBottom: 12 },
-  avatarText: { color: colors.bg, fontWeight: '900', fontSize: 32 },
-  displayName: { color: colors.text, fontSize: fonts.sizes.xl, fontWeight: '800' },
-  username: { color: colors.textSecondary, fontSize: fonts.sizes.md, marginTop: 2 },
-  campus: { color: colors.textMuted, fontSize: fonts.sizes.sm, marginTop: 4 },
-  statsRow: { flexDirection: 'row', marginTop: 20, gap: 16 },
-  statBox: { backgroundColor: colors.card, borderRadius: 12, padding: 16, alignItems: 'center', minWidth: 90, borderWidth: 1, borderColor: colors.cardBorder },
-  statValue: { color: colors.neonGreen, fontSize: fonts.sizes.xl, fontWeight: '900' },
-  statLabel: { color: colors.textSecondary, fontSize: fonts.sizes.xs, marginTop: 4 },
-  signOutBtn: { marginTop: 16, paddingVertical: 8, paddingHorizontal: 20 },
-  signOutText: { color: colors.danger, fontSize: fonts.sizes.sm, fontWeight: '600' },
+const ss = StyleSheet.create({
+  avatar: { width: 80, height: 80, borderRadius: 40, justifyContent: 'center', alignItems: 'center', marginBottom: 12, overflow: 'hidden' },
+  statBox: { borderRadius: 12, padding: 16, alignItems: 'center', minWidth: 90, borderWidth: 1 },
   gridItem: { flex: 1 / 3, aspectRatio: 1, padding: 2 },
-  gridImage: { flex: 1, borderRadius: 8, backgroundColor: colors.surface },
+  gridImage: { flex: 1, borderRadius: 8 },
   gridPlaceholder: { justifyContent: 'center', alignItems: 'center', padding: 4 },
-  gridDrinkName: { color: colors.textMuted, fontSize: fonts.sizes.xs, textAlign: 'center', marginTop: 4 },
-
-  // Modal
-  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'flex-end' },
-  modalContent: { backgroundColor: colors.bg, borderTopLeftRadius: 24, borderTopRightRadius: 24, maxHeight: screenHeight * 0.75, paddingBottom: 30, borderTopWidth: 1, borderColor: colors.cardBorder },
-  modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingTop: 20, paddingBottom: 12 },
-  modalTitle: { color: colors.text, fontSize: fonts.sizes.lg, fontWeight: '800' },
-  modalClose: { color: colors.textSecondary, fontSize: 20, fontWeight: '700' },
-  modalScroll: { paddingHorizontal: 20 },
-
-  sectionTitle: { color: colors.electricBlue, fontSize: fonts.sizes.sm, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 1, marginTop: 16, marginBottom: 8 },
-  sectionCard: { backgroundColor: colors.card, borderRadius: 12, padding: 12, borderWidth: 1, borderColor: colors.cardBorder },
-
-  breakdownRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: colors.cardBorder },
-  breakdownLabel: { color: colors.text, fontSize: fonts.sizes.md, flex: 1 },
-  breakdownCount: { color: colors.textMuted, fontSize: fonts.sizes.md, fontWeight: '800', minWidth: 30, textAlign: 'right' },
-  breakdownCountActive: { color: colors.neonGreen },
-  breakdownCountBrand: { color: colors.electricBlue },
-  breakdownCountProduct: { color: colors.neonGreen },
-  rankNumber: { color: colors.textMuted, fontWeight: '600' },
-  emptyText: { color: colors.textMuted, fontSize: fonts.sizes.sm, textAlign: 'center', paddingVertical: 12 },
-
-  dismissBtn: { marginHorizontal: 20, marginTop: 12, backgroundColor: colors.surface, borderRadius: 12, paddingVertical: 14, alignItems: 'center', borderWidth: 1, borderColor: colors.cardBorder },
-  dismissText: { color: colors.textSecondary, fontSize: fonts.sizes.md, fontWeight: '700' },
 });

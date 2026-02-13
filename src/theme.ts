@@ -1,3 +1,4 @@
+// Legacy colors export for compatibility - prefer useTheme() hook
 export const colors = {
   bg: '#0a0a0a',
   card: '#141414',
