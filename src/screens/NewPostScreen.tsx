@@ -8,6 +8,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { DRINK_CATEGORIES, getBrandsByCategory, getBrandProducts, getProductFlavors, DrinkCategory, searchBrands, getCategoryForBrand } from '../data/drinks';
 import { cityFromCampus, getSelectableCities } from '../data/cities';
 import { checkAndAwardBadges } from '../lib/badges';
+import PostCelebration from '../components/PostCelebration';
 
 type Step = 'category' | 'brand' | 'product' | 'flavor' | 'details';
 
@@ -26,6 +27,9 @@ export default function NewPostScreen({ navigation }: any) {
   const [rating, setRating] = useState<number>(0);
   const [isPrivate, setIsPrivate] = useState(false);
   const [city, setCity] = useState<string>('');
+  const [celebrating, setCelebrating] = useState(false);
+  const [celebrateCategory, setCelebrateCategory] = useState<string>('');
+  const [celebrateDrink, setCelebrateDrink] = useState<string>('');
   const [brandSearch, setBrandSearch] = useState('');
   const [productSearch, setProductSearch] = useState('');
 
@@ -77,8 +81,9 @@ export default function NewPostScreen({ navigation }: any) {
       if (error) throw error;
       // Check badges in background
       checkAndAwardBadges(user!.id).catch(() => {});
-      reset();
-      navigation.navigate('Feed');
+      setCelebrateCategory(category || 'other');
+      setCelebrateDrink(drinkName);
+      setCelebrating(true);
     } catch (err: any) {
       if (Platform.OS === 'web') window.alert('Error: ' + err.message); else alert('Error: ' + err.message);
     } finally { setPosting(false); }
@@ -106,6 +111,20 @@ export default function NewPostScreen({ navigation }: any) {
       <Text style={{ color: colors.electricBlue, fontSize: fonts.sizes.md, fontWeight: '600' }}>← Back</Text>
     </TouchableOpacity>
   ) : null;
+
+  if (celebrating) {
+    return (
+      <PostCelebration
+        category={celebrateCategory}
+        drinkName={celebrateDrink}
+        onDone={() => {
+          setCelebrating(false);
+          reset();
+          navigation.navigate('Feed');
+        }}
+      />
+    );
+  }
 
   if (step === 'category') {
     const searchResults = searchBrands(brandSearch);
