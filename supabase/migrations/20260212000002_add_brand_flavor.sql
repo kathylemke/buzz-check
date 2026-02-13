@@ -1,0 +1,2 @@
+ALTER TABLE public.bc_posts ADD COLUMN IF NOT EXISTS brand TEXT;
+ALTER TABLE public.bc_posts ADD COLUMN IF NOT EXISTS flavor TEXT;
