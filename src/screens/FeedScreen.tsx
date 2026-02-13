@@ -52,9 +52,7 @@ export default function FeedScreen() {
 
   const fetchPosts = useCallback(async () => {
     let query = supabase.from('bc_posts').select('*').order('created_at', { ascending: false }).limit(50);
-    if (feedMode === 'everyone') {
-      query = query.eq('is_private', false);
-    } else if (user) {
+    if (feedMode === 'following' && user) {
       const ids = [...followingIds, user.id];
       query = query.in('user_id', ids);
     }

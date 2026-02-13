@@ -66,10 +66,14 @@ export default function NewPostScreen({ navigation }: any) {
           photo_url = data.publicUrl;
         }
       }
-      const { error } = await supabase.from('bc_posts').insert({
+      const postData: any = {
         user_id: user!.id, drink_name: drinkName, drink_type: category, brand, flavor: finalFlavor || null,
-        caption: caption.trim() || null, photo_url, rating: rating || null, is_private: isPrivate, city: city || null,
-      });
+        caption: caption.trim() || null, photo_url, rating: rating || null,
+      };
+      // Only include these if the columns exist (migration may not have run yet)
+      if (isPrivate) postData.is_private = true;
+      if (city) postData.city = city;
+      const { error } = await supabase.from('bc_posts').insert(postData);
       if (error) throw error;
       // Check badges in background
       checkAndAwardBadges(user!.id).catch(() => {});
