@@ -6,7 +6,7 @@ import { fonts } from '../theme';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { DRINK_CATEGORIES, getBrandsByCategory, getBrandProducts, getProductFlavors, DrinkCategory } from '../data/drinks';
-import { CITIES, cityFromCampus } from '../data/cities';
+import { cityFromCampus, getSelectableCities } from '../data/cities';
 import { checkAndAwardBadges } from '../lib/badges';
 
 type Step = 'category' | 'brand' | 'product' | 'flavor' | 'details';
@@ -220,13 +220,16 @@ export default function NewPostScreen({ navigation }: any) {
 
       {/* City */}
       <Text style={[s.stepLabel, { marginTop: 4 }]}>City</Text>
-      <View style={{ flexDirection: 'row', gap: 8, marginBottom: 12 }}>
-        {CITIES.map(c => (
-          <TouchableOpacity key={c} onPress={() => setCity(c)} style={[s.chip, city === c && { backgroundColor: colors.electricBlue + '22', borderColor: colors.electricBlue }]}>
-            <Text style={{ color: city === c ? colors.electricBlue : colors.textSecondary, fontWeight: '600', fontSize: fonts.sizes.sm }}>{c}</Text>
-          </TouchableOpacity>
-        ))}
-      </View>
+      {city ? <Text style={{ color: colors.electricBlue, fontSize: fonts.sizes.sm, marginBottom: 8 }}>📍 {city}</Text> : null}
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 12 }}>
+        <View style={{ flexDirection: 'row', gap: 8 }}>
+          {getSelectableCities().map(c => (
+            <TouchableOpacity key={c} onPress={() => setCity(c)} style={[s.chip, city === c && { backgroundColor: colors.electricBlue + '22', borderColor: colors.electricBlue }]}>
+              <Text style={{ color: city === c ? colors.electricBlue : colors.textSecondary, fontWeight: '600', fontSize: fonts.sizes.sm }} numberOfLines={1}>{c}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      </ScrollView>
 
       {/* Privacy */}
       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16, backgroundColor: colors.surface, padding: 14, borderRadius: 12 }}>
