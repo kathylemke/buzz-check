@@ -7,7 +7,7 @@ import { useAuth } from '../contexts/AuthContext';
 
 type Comment = { id: string; text: string; photo_url: string | null; created_at: string; user: { username: string } };
 type Post = {
-  id: string; drink_name: string; drink_type: string; caption: string; photo_url: string | null;
+  id: string; user_id: string; drink_name: string; drink_type: string; caption: string; photo_url: string | null;
   created_at: string; rating: number | null; is_private: boolean; city: string | null;
   bc_users: { username: string; display_name: string | null; avatar_url: string | null };
   like_count: number; liked_by_me: boolean; comment_count: number;
@@ -31,7 +31,7 @@ function LikeButton({ liked, count, onPress }: { liked: boolean; count: number; 
   );
 }
 
-export default function FeedScreen() {
+export default function FeedScreen({ navigation }: any) {
   const { user } = useAuth();
   const { colors } = useTheme();
   const [posts, setPosts] = useState<Post[]>([]);
@@ -142,7 +142,9 @@ export default function FeedScreen() {
           </View>
         )}
         <View style={{ flex: 1 }}>
-          <Text style={[ss.username, { color: colors.text }]}>{item.bc_users.username}</Text>
+          <TouchableOpacity onPress={() => navigation.navigate('UserProfile', { userId: item.user_id })}>
+            <Text style={[ss.username, { color: colors.text }]}>{item.bc_users.username}</Text>
+          </TouchableOpacity>
           <Text style={[ss.timestamp, { color: colors.textMuted }]}>{timeAgo(item.created_at)}</Text>
         </View>
         <View style={{ alignItems: 'flex-end', flexDirection: 'row', gap: 8 }}>

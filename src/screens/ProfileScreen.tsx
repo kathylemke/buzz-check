@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { View, Text, FlatList, Image, StyleSheet, TouchableOpacity, RefreshControl, Modal, ScrollView, Dimensions, TextInput, Platform } from 'react-native';
+import { View, Text, FlatList, Image, StyleSheet, TouchableOpacity, RefreshControl, Modal, ScrollView, TextInput, Platform, Switch } from 'react-native';
+import * as ImagePicker from 'expo-image-picker';
 import { useTheme } from '../contexts/ThemeContext';
 import { fonts, drinkTypeEmoji, drinkTypeLabels } from '../theme';
 import { supabase } from '../lib/supabase';
@@ -10,9 +11,12 @@ import { CAMPUS_TO_CITY, cityFromCampus, getSelectableCities } from '../data/cit
 type Post = { id: string; drink_name: string; drink_type: string; brand: string | null; photo_url: string | null; created_at: string };
 type Badge = { badge_type: string; badge_name: string; metadata?: { desc?: string; emoji?: string }; earned_at: string };
 
-export default function ProfileScreen() {
+export default function ProfileScreen({ route, navigation }: any) {
   const { user, signOut } = useAuth();
   const { colors, mode, toggle } = useTheme();
+  const viewingUserId = route?.params?.userId;
+  const isOwnProfile = !viewingUserId || viewingUserId === user?.id;
+
   const [profile, setProfile] = useState<any>(null);
   const [posts, setPosts] = useState<Post[]>([]);
   const [badges, setBadges] = useState<Badge[]>([]);
@@ -29,6 +33,10 @@ export default function ProfileScreen() {
   const [newDisplayName, setNewDisplayName] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [editMsg, setEditMsg] = useState('');
+  const [topDrinksByConsumption, setTopDrinksByConsumption] = useState<{name: string; count: number}[]>([]);
+  const [followStatus, setFollowStatus] = useState<'none' | 'pending' | 'accepted'>('none');
+
+  const targetUserId = viewingUserId || user?.id;
 
   const saveUsername = async () => {
     if (!user || !newUsername.trim()) return;
@@ -41,7 +49,6 @@ export default function ProfileScreen() {
 
   const savePassword = async () => {
     if (!user || !newPassword || newPassword.length < 4) { setEditMsg('Password must be 4+ chars'); return; }
-    // Hash using same method as AuthContext
     const encoder = new TextEncoder();
     const data = encoder.encode(newPassword);
     const hashBuffer = await crypto.subtle.digest('SHA-256', data);
@@ -50,6 +57,26 @@ export default function ProfileScreen() {
     await supabase.from('bc_users').update({ password_hash: hashHex }).eq('id', user.id);
     setNewPassword('');
     setEditMsg('✓ Password updated');
+  };
+
+  const uploadProfilePic = async () => {
+    if (!user) return;
+    const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], allowsEditing: true, aspect: [1, 1], quality: 0.7 });
+    if (result.canceled) return;
+    const uri = result.assets[0].uri;
+    const ext = uri.split('.').pop() ?? 'jpg';
+    const fileName = `profile-pics/${user.id}.${ext}`;
+    try {
+      const response = await fetch(uri);
+      const blob = await response.blob();
+      const arrayBuffer = await new Response(blob).arrayBuffer();
+      await supabase.storage.from('post-photos').upload(fileName, arrayBuffer, { contentType: `image/${ext}`, upsert: true });
+      const { data } = supabase.storage.from('post-photos').getPublicUrl(fileName);
+      const picUrl = data.publicUrl + '?t=' + Date.now();
+      await supabase.from('bc_users').update({ profile_pic_url: picUrl }).eq('id', user.id);
+      setProfile((p: any) => p ? { ...p, profile_pic_url: picUrl } : p);
+      setEditMsg('✓ Photo updated');
+    } catch (e: any) { setEditMsg('Upload failed: ' + e.message); }
   };
 
   const ALL_CAMPUSES = Object.keys(CAMPUS_TO_CITY).sort();
@@ -87,11 +114,29 @@ export default function ProfileScreen() {
     setEditMsg('✓ City set to ' + city);
   };
 
-  const fetchData = useCallback(async () => {
+  const saveSettings = async (updates: any) => {
     if (!user) return;
+    await supabase.from('bc_users').update(updates).eq('id', user.id);
+    setProfile((p: any) => p ? { ...p, ...updates } : p);
+  };
+
+  const handleFollow = async () => {
+    if (!user || !viewingUserId) return;
+    if (followStatus === 'none') {
+      const status = profile?.approve_follows ? 'pending' : 'accepted';
+      await supabase.from('bc_follows').insert({ follower_id: user.id, following_id: viewingUserId, status });
+      setFollowStatus(status);
+    } else {
+      await supabase.from('bc_follows').delete().eq('follower_id', user.id).eq('following_id', viewingUserId);
+      setFollowStatus('none');
+    }
+  };
+
+  const fetchData = useCallback(async () => {
+    if (!targetUserId) return;
     const [profileRes, postsRes] = await Promise.all([
-      supabase.from('bc_users').select('*').eq('id', user.id).single(),
-      supabase.from('bc_posts').select('*').eq('user_id', user.id).order('created_at', { ascending: false }),
+      supabase.from('bc_users').select('*').eq('id', targetUserId).single(),
+      supabase.from('bc_posts').select('*').eq('user_id', targetUserId).order('created_at', { ascending: false }),
     ]);
     if (profileRes.data) setProfile(profileRes.data);
     if (postsRes.data) {
@@ -104,19 +149,27 @@ export default function ProfileScreen() {
         week: postsRes.data.filter((p: Post) => p.created_at >= startOfWeek).length,
         allTime: postsRes.data.length,
       });
+      // Top 3 drinks by consumption
+      const drinkCounts: Record<string, number> = {};
+      for (const p of postsRes.data) {
+        const key = p.drink_name || p.brand || 'Unknown';
+        drinkCounts[key] = (drinkCounts[key] || 0) + 1;
+      }
+      const sorted = Object.entries(drinkCounts).sort((a, b) => b[1] - a[1]).slice(0, 3);
+      setTopDrinksByConsumption(sorted.map(([name, count]) => ({ name, count })));
     }
-    const b = await getUserBadges(user.id);
+    const b = await getUserBadges(targetUserId);
     setBadges(b);
-  }, [user]);
+
+    // Check follow status if viewing someone else
+    if (!isOwnProfile && user) {
+      const { data: f } = await supabase.from('bc_follows').select('status').eq('follower_id', user.id).eq('following_id', viewingUserId).single();
+      setFollowStatus(f?.status || 'none');
+    }
+  }, [targetUserId, user, isOwnProfile, viewingUserId]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
   const onRefresh = async () => { setRefreshing(true); await fetchData(); setRefreshing(false); };
-
-  const updateCity = async (c: string) => {
-    if (!user) return;
-    await supabase.from('bc_users').update({ city: c }).eq('id', user.id);
-    setProfile((p: any) => p ? { ...p, city: c } : p);
-  };
 
   const openBreakdown = (period: 'today' | 'week' | 'allTime') => {
     const now = new Date();
@@ -137,6 +190,8 @@ export default function ProfileScreen() {
     }
     setBreakdown({ title: config.title, byType, byBrand: Object.entries(brandMap).sort((a, b) => b[1] - a[1]) });
   };
+
+  const memberSince = profile?.created_at ? new Date(profile.created_at).toLocaleDateString('en-US', { month: 'long', year: 'numeric' }) : null;
 
   const StatBox = ({ label, value, period }: any) => (
     <TouchableOpacity style={[ss.statBox, { backgroundColor: colors.card, borderColor: colors.cardBorder }]} onPress={() => openBreakdown(period)} activeOpacity={0.7}>
@@ -159,6 +214,7 @@ export default function ProfileScreen() {
   );
 
   const typeKeys = ['energy_drink', 'protein_shake', 'coffee', 'pre_workout', 'other'];
+  const userTopDrinks = profile?.top_drinks && Array.isArray(profile.top_drinks) && profile.top_drinks.length > 0 ? profile.top_drinks : null;
 
   return (
     <>
@@ -171,40 +227,79 @@ export default function ProfileScreen() {
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.neonGreen} />}
         ListHeaderComponent={
           <View style={{ alignItems: 'center', paddingTop: 60, paddingBottom: 20, paddingHorizontal: 16 }}>
-            {/* Theme toggle */}
-            <TouchableOpacity onPress={toggle} style={{ position: 'absolute', top: 60, right: 16 }}>
-              <Text style={{ fontSize: 24 }}>{mode === 'dark' ? '☀️' : '🌙'}</Text>
+            {/* Back button for viewing others */}
+            {!isOwnProfile && (
+              <TouchableOpacity onPress={() => navigation.goBack()} style={{ position: 'absolute', top: 60, left: 16 }}>
+                <Text style={{ color: colors.electricBlue, fontSize: fonts.sizes.md, fontWeight: '600' }}>← Back</Text>
+              </TouchableOpacity>
+            )}
+
+            {/* Theme toggle (own profile only) */}
+            {isOwnProfile && (
+              <TouchableOpacity onPress={toggle} style={{ position: 'absolute', top: 60, right: 16 }}>
+                <Text style={{ fontSize: 24 }}>{mode === 'dark' ? '☀️' : '🌙'}</Text>
+              </TouchableOpacity>
+            )}
+
+            {/* Avatar */}
+            <TouchableOpacity onPress={isOwnProfile && editMode ? uploadProfilePic : undefined} activeOpacity={isOwnProfile && editMode ? 0.7 : 1}>
+              {profile?.profile_pic_url ? (
+                <Image source={{ uri: profile.profile_pic_url }} style={[ss.avatar, { backgroundColor: colors.electricBlue }]} />
+              ) : (
+                <View style={[ss.avatar, { backgroundColor: colors.electricBlue }]}>
+                  <Text style={{ color: colors.bg, fontWeight: '900', fontSize: 32 }}>{profile?.username?.[0]?.toUpperCase() ?? '?'}</Text>
+                </View>
+              )}
+              {isOwnProfile && editMode && (
+                <View style={{ position: 'absolute', bottom: 0, right: 0, backgroundColor: colors.neonGreen, borderRadius: 12, width: 24, height: 24, justifyContent: 'center', alignItems: 'center' }}>
+                  <Text style={{ fontSize: 14 }}>📷</Text>
+                </View>
+              )}
             </TouchableOpacity>
 
-            {profile?.avatar_url ? (
-              <Image source={{ uri: profile.avatar_url }} style={[ss.avatar, { backgroundColor: colors.electricBlue }]} />
-            ) : (
-              <View style={[ss.avatar, { backgroundColor: colors.electricBlue }]}>
-                <Text style={{ color: colors.bg, fontWeight: '900', fontSize: 32 }}>{profile?.username?.[0]?.toUpperCase() ?? '?'}</Text>
-              </View>
-            )}
             <Text style={{ color: colors.text, fontSize: fonts.sizes.xl, fontWeight: '800' }}>{profile?.display_name ?? profile?.username ?? '...'}</Text>
             <Text style={{ color: colors.textSecondary, fontSize: fonts.sizes.md, marginTop: 2 }}>@{profile?.username}</Text>
             {profile?.campus && <Text style={{ color: colors.textMuted, fontSize: fonts.sizes.sm, marginTop: 4 }}>🎓 {profile.campus}</Text>}
             {profile?.city && <Text style={{ color: colors.electricBlue, fontSize: fonts.sizes.xs, marginTop: 2 }}>📍 {profile.city}</Text>}
+            {profile?.show_age && profile?.age_range && <Text style={{ color: colors.textMuted, fontSize: fonts.sizes.xs, marginTop: 2 }}>🎂 {profile.age_range}</Text>}
 
-            <TouchableOpacity onPress={() => { setEditMode(!editMode); setCampusInput(profile?.campus || ''); setNewUsername(profile?.username || ''); setNewDisplayName(profile?.display_name || ''); setNewPassword(''); setEditMsg(''); }} style={{ marginTop: 8 }}>
-              <Text style={{ color: colors.electricBlue, fontSize: fonts.sizes.xs, fontWeight: '600' }}>{editMode ? 'Done' : '✏️ Edit Profile'}</Text>
-            </TouchableOpacity>
+            {/* Member since */}
+            {memberSince && <Text style={{ color: colors.textMuted, fontSize: fonts.sizes.xs, marginTop: 6 }}>Member since {memberSince}</Text>}
 
-            {editMode && (
+            {/* Follow button for other profiles */}
+            {!isOwnProfile && (
+              <TouchableOpacity
+                onPress={handleFollow}
+                style={{ marginTop: 12, backgroundColor: followStatus === 'accepted' ? colors.surface : followStatus === 'pending' ? colors.surface : colors.electricBlue, borderRadius: 20, paddingVertical: 8, paddingHorizontal: 24, borderWidth: 1, borderColor: followStatus === 'accepted' ? colors.cardBorder : followStatus === 'pending' ? colors.cardBorder : colors.electricBlue }}
+              >
+                <Text style={{ color: followStatus === 'none' ? '#fff' : colors.textSecondary, fontWeight: '700', fontSize: fonts.sizes.sm }}>
+                  {followStatus === 'accepted' ? '✓ Following' : followStatus === 'pending' ? '⏳ Requested' : '+ Follow'}
+                </Text>
+              </TouchableOpacity>
+            )}
+
+            {/* Edit profile toggle */}
+            {isOwnProfile && (
+              <TouchableOpacity onPress={() => { setEditMode(!editMode); setCampusInput(profile?.campus || ''); setNewUsername(profile?.username || ''); setNewDisplayName(profile?.display_name || ''); setNewPassword(''); setEditMsg(''); }} style={{ marginTop: 8 }}>
+                <Text style={{ color: colors.electricBlue, fontSize: fonts.sizes.xs, fontWeight: '600' }}>{editMode ? 'Done' : '✏️ Edit Profile'}</Text>
+              </TouchableOpacity>
+            )}
+
+            {/* Edit mode panel */}
+            {isOwnProfile && editMode && (
               <View style={{ width: '100%', marginTop: 12, backgroundColor: colors.card, borderRadius: 12, padding: 16, borderWidth: 1, borderColor: colors.cardBorder }}>
                 {editMsg ? <Text style={{ color: colors.neonGreen, fontSize: 12, marginBottom: 8, textAlign: 'center' }}>{editMsg}</Text> : null}
+
+                {/* Profile Picture */}
+                <TouchableOpacity onPress={uploadProfilePic} style={{ alignSelf: 'center', marginBottom: 16 }}>
+                  <Text style={{ color: colors.electricBlue, fontSize: fonts.sizes.sm, fontWeight: '600' }}>📷 Change Profile Picture</Text>
+                </TouchableOpacity>
 
                 <Text style={{ color: colors.textMuted, fontSize: 11, fontWeight: '700', marginBottom: 6, textTransform: 'uppercase' }}>Username</Text>
                 <View style={{ flexDirection: 'row', gap: 8, marginBottom: 12 }}>
                   <TextInput
                     style={{ flex: 1, backgroundColor: colors.inputBg, borderWidth: 1, borderColor: colors.inputBorder, borderRadius: 8, padding: 12, fontSize: fonts.sizes.sm, color: colors.text }}
-                    value={newUsername}
-                    onChangeText={setNewUsername}
-                    autoCapitalize="none"
-                    placeholder="Username"
-                    placeholderTextColor={colors.textMuted}
+                    value={newUsername} onChangeText={setNewUsername} autoCapitalize="none" placeholder="Username" placeholderTextColor={colors.textMuted}
                   />
                   <TouchableOpacity onPress={saveUsername} style={{ backgroundColor: colors.neonGreen, borderRadius: 8, paddingHorizontal: 16, justifyContent: 'center' }}>
                     <Text style={{ color: colors.bg, fontWeight: '700', fontSize: 12 }}>Save</Text>
@@ -214,35 +309,70 @@ export default function ProfileScreen() {
                 <Text style={{ color: colors.textMuted, fontSize: 11, fontWeight: '700', marginBottom: 6, textTransform: 'uppercase' }}>Display Name</Text>
                 <TextInput
                   style={{ backgroundColor: colors.inputBg, borderWidth: 1, borderColor: colors.inputBorder, borderRadius: 8, padding: 12, fontSize: fonts.sizes.sm, color: colors.text, marginBottom: 12 }}
-                  value={newDisplayName}
-                  onChangeText={setNewDisplayName}
-                  placeholder="Display name"
-                  placeholderTextColor={colors.textMuted}
+                  value={newDisplayName} onChangeText={setNewDisplayName} placeholder="Display name" placeholderTextColor={colors.textMuted}
                 />
 
                 <Text style={{ color: colors.textMuted, fontSize: 11, fontWeight: '700', marginBottom: 6, textTransform: 'uppercase' }}>New Password</Text>
                 <View style={{ flexDirection: 'row', gap: 8, marginBottom: 16 }}>
                   <TextInput
                     style={{ flex: 1, backgroundColor: colors.inputBg, borderWidth: 1, borderColor: colors.inputBorder, borderRadius: 8, padding: 12, fontSize: fonts.sizes.sm, color: colors.text }}
-                    value={newPassword}
-                    onChangeText={setNewPassword}
-                    secureTextEntry
-                    placeholder="New password"
-                    placeholderTextColor={colors.textMuted}
+                    value={newPassword} onChangeText={setNewPassword} secureTextEntry placeholder="New password" placeholderTextColor={colors.textMuted}
                   />
                   <TouchableOpacity onPress={savePassword} style={{ backgroundColor: colors.electricBlue, borderRadius: 8, paddingHorizontal: 16, justifyContent: 'center' }}>
                     <Text style={{ color: colors.bg, fontWeight: '700', fontSize: 12 }}>Update</Text>
                   </TouchableOpacity>
                 </View>
 
-                <Text style={{ color: colors.textMuted, fontSize: 11, fontWeight: '700', marginBottom: 6, textTransform: 'uppercase' }}>University</Text>
+                {/* Age Range */}
+                <Text style={{ color: colors.textMuted, fontSize: 11, fontWeight: '700', marginBottom: 6, textTransform: 'uppercase' }}>Age Range</Text>
+                <View style={{ flexDirection: 'row', gap: 8, marginBottom: 8 }}>
+                  {['Under 18', '18-25', '25+'].map(range => (
+                    <TouchableOpacity
+                      key={range}
+                      onPress={() => saveSettings({ age_range: range })}
+                      style={{ flex: 1, backgroundColor: profile?.age_range === range ? colors.electricBlue + '22' : colors.inputBg, borderRadius: 8, padding: 10, alignItems: 'center', borderWidth: 1, borderColor: profile?.age_range === range ? colors.electricBlue : colors.inputBorder }}
+                    >
+                      <Text style={{ color: profile?.age_range === range ? colors.electricBlue : colors.textSecondary, fontWeight: '600', fontSize: 12 }}>{range}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16, paddingHorizontal: 4 }}>
+                  <Text style={{ color: colors.textSecondary, fontSize: 12 }}>Show age on profile</Text>
+                  <Switch value={profile?.show_age || false} onValueChange={v => saveSettings({ show_age: v })} trackColor={{ true: colors.neonGreen, false: colors.inputBorder }} thumbColor="#fff" />
+                </View>
+
+                {/* Approve Follow Requests */}
+                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16, backgroundColor: colors.surface, padding: 14, borderRadius: 12 }}>
+                  <Text style={{ color: colors.text, fontWeight: '600', fontSize: 13 }}>🔒 Approve follow requests</Text>
+                  <Switch value={profile?.approve_follows || false} onValueChange={v => saveSettings({ approve_follows: v })} trackColor={{ true: colors.neonGreen, false: colors.inputBorder }} thumbColor="#fff" />
+                </View>
+
+                {/* Top 3 Drinks Preference */}
+                <Text style={{ color: colors.textMuted, fontSize: 11, fontWeight: '700', marginBottom: 6, textTransform: 'uppercase' }}>Top 3 Favorite Drinks (optional)</Text>
+                {[0, 1, 2].map(i => (
+                  <TextInput
+                    key={i}
+                    style={{ backgroundColor: colors.inputBg, borderWidth: 1, borderColor: colors.inputBorder, borderRadius: 8, padding: 12, fontSize: fonts.sizes.sm, color: colors.text, marginBottom: 8 }}
+                    placeholder={`#${i + 1} favorite drink`}
+                    placeholderTextColor={colors.textMuted}
+                    value={(profile?.top_drinks || [])[i] || ''}
+                    onChangeText={text => {
+                      const newDrinks = [...(profile?.top_drinks || ['', '', ''])];
+                      while (newDrinks.length < 3) newDrinks.push('');
+                      newDrinks[i] = text;
+                      setProfile((p: any) => p ? { ...p, top_drinks: newDrinks } : p);
+                    }}
+                    onBlur={() => {
+                      const drinks = (profile?.top_drinks || []).filter((d: string) => d.trim());
+                      saveSettings({ top_drinks: drinks });
+                    }}
+                  />
+                ))}
+
+                <Text style={{ color: colors.textMuted, fontSize: 11, fontWeight: '700', marginTop: 8, marginBottom: 6, textTransform: 'uppercase' }}>University</Text>
                 <TextInput
                   style={{ backgroundColor: colors.inputBg, borderWidth: 1, borderColor: colors.inputBorder, borderRadius: 8, padding: 12, fontSize: fonts.sizes.sm, color: colors.text }}
-                  placeholder="Search university..."
-                  placeholderTextColor={colors.textMuted}
-                  value={campusInput}
-                  onChangeText={onCampusType}
-                  autoCapitalize="words"
+                  placeholder="Search university..." placeholderTextColor={colors.textMuted} value={campusInput} onChangeText={onCampusType} autoCapitalize="words"
                 />
                 {campusSuggestions.length > 0 && (
                   <View style={{ backgroundColor: colors.surface, borderRadius: 8, marginTop: 4, borderWidth: 1, borderColor: colors.cardBorder }}>
@@ -254,22 +384,16 @@ export default function ProfileScreen() {
                     ))}
                   </View>
                 )}
-
                 <TouchableOpacity onPress={() => setNotInUni(!notInUni)} style={{ marginTop: 12 }}>
                   <Text style={{ color: colors.electricBlue, fontSize: fonts.sizes.xs, fontWeight: '600' }}>
                     {notInUni ? '↑ Search university instead' : 'Not in university? Select your home city'}
                   </Text>
                 </TouchableOpacity>
-
                 {notInUni && (
                   <View style={{ marginTop: 8 }}>
                     <TextInput
                       style={{ backgroundColor: colors.inputBg, borderWidth: 1, borderColor: colors.inputBorder, borderRadius: 8, padding: 12, fontSize: fonts.sizes.sm, color: colors.text }}
-                      placeholder="Search city..."
-                      placeholderTextColor={colors.textMuted}
-                      value={citySearch}
-                      onChangeText={onCitySearch}
-                      autoCapitalize="words"
+                      placeholder="Search city..." placeholderTextColor={colors.textMuted} value={citySearch} onChangeText={onCitySearch} autoCapitalize="words"
                     />
                     {citySuggestions.length > 0 && (
                       <View style={{ backgroundColor: colors.surface, borderRadius: 8, marginTop: 4, borderWidth: 1, borderColor: colors.cardBorder }}>
@@ -285,6 +409,40 @@ export default function ProfileScreen() {
               </View>
             )}
 
+            {/* Top 3 Drinks Section */}
+            {(userTopDrinks || topDrinksByConsumption.length > 0) && (
+              <View style={{ width: '100%', marginTop: 20 }}>
+                {userTopDrinks && (
+                  <>
+                    <Text style={{ color: colors.electricBlue, fontSize: fonts.sizes.sm, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 }}>⭐ Favorite Drinks</Text>
+                    <View style={{ flexDirection: 'row', gap: 8, marginBottom: 12 }}>
+                      {userTopDrinks.map((d: string, i: number) => (
+                        <View key={i} style={{ flex: 1, backgroundColor: colors.card, borderRadius: 12, padding: 12, alignItems: 'center', borderWidth: 1, borderColor: colors.cardBorder }}>
+                          <Text style={{ fontSize: 18, marginBottom: 4 }}>{['🥇', '🥈', '🥉'][i]}</Text>
+                          <Text style={{ color: colors.text, fontSize: 11, fontWeight: '600', textAlign: 'center' }} numberOfLines={2}>{d}</Text>
+                        </View>
+                      ))}
+                    </View>
+                  </>
+                )}
+                {topDrinksByConsumption.length > 0 && (
+                  <>
+                    <Text style={{ color: colors.electricBlue, fontSize: fonts.sizes.sm, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 }}>🔥 Most Consumed</Text>
+                    <View style={{ flexDirection: 'row', gap: 8 }}>
+                      {topDrinksByConsumption.map((d, i) => (
+                        <View key={i} style={{ flex: 1, backgroundColor: colors.card, borderRadius: 12, padding: 12, alignItems: 'center', borderWidth: 1, borderColor: colors.cardBorder }}>
+                          <Text style={{ fontSize: 18, marginBottom: 4 }}>{['🥇', '🥈', '🥉'][i]}</Text>
+                          <Text style={{ color: colors.text, fontSize: 11, fontWeight: '600', textAlign: 'center' }} numberOfLines={2}>{d.name}</Text>
+                          <Text style={{ color: colors.textMuted, fontSize: 10, marginTop: 2 }}>{d.count}x</Text>
+                        </View>
+                      ))}
+                    </View>
+                  </>
+                )}
+              </View>
+            )}
+
+            {/* Drink counts */}
             <View style={{ flexDirection: 'row', marginTop: 20, gap: 16 }}>
               <StatBox label="Today" value={stats.today} period="today" />
               <StatBox label="This Week" value={stats.week} period="week" />
@@ -309,37 +467,43 @@ export default function ProfileScreen() {
               </View>
             )}
 
-            {/* Unearned badges */}
-            <View style={{ width: '100%', marginTop: 16 }}>
-              <Text style={{ color: colors.textMuted, fontSize: fonts.sizes.xs, fontWeight: '600', marginBottom: 8 }}>LOCKED BADGES</Text>
-              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-                {BADGE_DEFS.filter(d => !badges.some(b => b.badge_type === d.type && b.badge_name === d.name)).map((d, i) => (
-                  <View key={i} style={{ backgroundColor: colors.surface, borderRadius: 12, padding: 10, alignItems: 'center', width: 80, opacity: 0.4 }}>
-                    <Text style={{ fontSize: 24 }}>🔒</Text>
-                    <Text style={{ color: colors.textMuted, fontSize: 10, fontWeight: '600', textAlign: 'center', marginTop: 4 }} numberOfLines={2}>{d.name}</Text>
-                  </View>
-                ))}
+            {/* Unearned badges (own profile only) */}
+            {isOwnProfile && (
+              <View style={{ width: '100%', marginTop: 16 }}>
+                <Text style={{ color: colors.textMuted, fontSize: fonts.sizes.xs, fontWeight: '600', marginBottom: 8 }}>LOCKED BADGES</Text>
+                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+                  {BADGE_DEFS.filter(d => !badges.some(b => b.badge_type === d.type && b.badge_name === d.name)).map((d, i) => (
+                    <View key={i} style={{ backgroundColor: colors.surface, borderRadius: 12, padding: 10, alignItems: 'center', width: 80, opacity: 0.4 }}>
+                      <Text style={{ fontSize: 24 }}>🔒</Text>
+                      <Text style={{ color: colors.textMuted, fontSize: 10, fontWeight: '600', textAlign: 'center', marginTop: 4 }} numberOfLines={2}>{d.name}</Text>
+                    </View>
+                  ))}
+                </View>
               </View>
-            </View>
+            )}
 
-            <TouchableOpacity style={{ marginTop: 20, backgroundColor: colors.electricBlue, borderRadius: 12, paddingVertical: 12, paddingHorizontal: 24 }} onPress={async () => {
-              const link = 'https://kathylemke.github.io/buzz-check';
-              if (Platform.OS === 'web' && navigator.clipboard) {
-                await navigator.clipboard.writeText(link);
-                setEditMsg('🔗 Link copied!');
-              } else {
-                try {
-                  const { Share } = require('react-native');
-                  await Share.share({ message: `Join me on L.I.D! 🥤 ${link}` });
-                } catch { setEditMsg(link); }
-              }
-            }}>
-              <Text style={{ color: '#fff', fontSize: fonts.sizes.sm, fontWeight: '700', textAlign: 'center' }}>🔗 Invite Friends</Text>
-            </TouchableOpacity>
+            {isOwnProfile && (
+              <>
+                <TouchableOpacity style={{ marginTop: 20, backgroundColor: colors.electricBlue, borderRadius: 12, paddingVertical: 12, paddingHorizontal: 24 }} onPress={async () => {
+                  const link = 'https://kathylemke.github.io/buzz-check';
+                  if (Platform.OS === 'web' && navigator.clipboard) {
+                    await navigator.clipboard.writeText(link);
+                    setEditMsg('🔗 Link copied!');
+                  } else {
+                    try {
+                      const { Share } = require('react-native');
+                      await Share.share({ message: `Join me on L.I.D! 🥤 ${link}` });
+                    } catch { setEditMsg(link); }
+                  }
+                }}>
+                  <Text style={{ color: '#fff', fontSize: fonts.sizes.sm, fontWeight: '700', textAlign: 'center' }}>🔗 Invite Friends</Text>
+                </TouchableOpacity>
 
-            <TouchableOpacity style={{ marginTop: 12, paddingVertical: 8, paddingHorizontal: 20 }} onPress={signOut}>
-              <Text style={{ color: colors.danger, fontSize: fonts.sizes.sm, fontWeight: '600' }}>Sign Out</Text>
-            </TouchableOpacity>
+                <TouchableOpacity style={{ marginTop: 12, paddingVertical: 8, paddingHorizontal: 20 }} onPress={signOut}>
+                  <Text style={{ color: colors.danger, fontSize: fonts.sizes.sm, fontWeight: '600' }}>Sign Out</Text>
+                </TouchableOpacity>
+              </>
+            )}
           </View>
         }
         contentContainerStyle={{ paddingBottom: 100 }}
@@ -362,7 +526,7 @@ export default function ProfileScreen() {
               ))}
               {breakdown?.byBrand?.length > 0 && (
                 <>
-                  <Text style={{ color: colors.electricBlue, fontSize: 12, fontWeight: '700', marginTop: 16, marginBottom: 8 }}>TOP BRANDS</Text>
+                  <Text style={{ color: colors.electricBlue, fontSize: 12, fontWeight: '700', marginTop: 16, marginBottom: 8 }}>TOP COMPANIES</Text>
                   {breakdown.byBrand.slice(0, 10).map(([brand, count]: any, i: number) => (
                     <View key={brand} style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 8 }}>
                       <Text style={{ color: colors.text }}>{i + 1}. {brand}</Text>

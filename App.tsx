@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { Text } from 'react-native';
 import { AuthProvider, useAuth } from './src/contexts/AuthContext';
 import { ThemeProvider, useTheme } from './src/contexts/ThemeContext';
@@ -15,6 +16,7 @@ import FriendsScreen from './src/screens/FriendsScreen';
 import LeaderboardScreen from './src/screens/LeaderboardScreen';
 
 const Tab = createBottomTabNavigator();
+const Stack = createNativeStackNavigator();
 
 function AppTabs() {
   const { colors, mode } = useTheme();
@@ -55,7 +57,12 @@ function Main() {
   if (loading || (session && needsWelcome === null)) return null;
   if (!session) return <LoginScreen />;
   if (needsWelcome) return <WelcomeScreen onComplete={() => setNeedsWelcome(false)} />;
-  return <AppTabs />;
+  return (
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="MainTabs" component={AppTabs} />
+      <Stack.Screen name="UserProfile" component={ProfileScreen} />
+    </Stack.Navigator>
+  );
 }
 
 export default function App() {
