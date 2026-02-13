@@ -217,18 +217,7 @@ export default function NewPostScreen({ navigation }: any) {
 
       <TextInput style={[s.input, { height: 80, textAlignVertical: 'top' }]} placeholder="Caption (optional)" placeholderTextColor={colors.textMuted} value={caption} onChangeText={setCaption} multiline />
 
-      {/* City */}
-      <Text style={[s.stepLabel, { marginTop: 4 }]}>City</Text>
-      {city ? <Text style={{ color: colors.electricBlue, fontSize: fonts.sizes.sm, marginBottom: 8 }}>📍 {city}</Text> : null}
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 12 }}>
-        <View style={{ flexDirection: 'row', gap: 8 }}>
-          {getSelectableCities().map(c => (
-            <TouchableOpacity key={c} onPress={() => setCity(c)} style={[s.chip, city === c && { backgroundColor: colors.electricBlue + '22', borderColor: colors.electricBlue }]}>
-              <Text style={{ color: city === c ? colors.electricBlue : colors.textSecondary, fontWeight: '600', fontSize: fonts.sizes.sm }} numberOfLines={1}>{c}</Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-      </ScrollView>
+      {/* City auto-set from profile */}
 
       {/* Privacy */}
       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16, backgroundColor: colors.surface, padding: 14, borderRadius: 12 }}>
