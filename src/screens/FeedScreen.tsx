@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react';
-import { View, Text, FlatList, Image, StyleSheet, RefreshControl, TouchableOpacity, TextInput, Animated, Modal, ScrollView } from 'react-native';
+import { View, Text, FlatList, Image, StyleSheet, RefreshControl, TouchableOpacity, TextInput, Animated, Modal, ScrollView, Platform } from 'react-native';
 import { useTheme } from '../contexts/ThemeContext';
 import { fonts, drinkTypeEmoji } from '../theme';
 import { supabase } from '../lib/supabase';
@@ -52,7 +52,9 @@ export default function FeedScreen() {
 
   const fetchPosts = useCallback(async () => {
     let query = supabase.from('bc_posts').select('*').order('created_at', { ascending: false }).limit(50);
-    if (feedMode === 'following' && user) {
+    if (feedMode === 'everyone') {
+      query = query.eq('is_private', false);
+    } else if (feedMode === 'following' && user) {
       const ids = [...followingIds, user.id];
       query = query.in('user_id', ids);
     }
@@ -119,6 +121,16 @@ export default function FeedScreen() {
     return new Date(date).toLocaleDateString();
   };
 
+  const deletePost = async (postId: string) => {
+    if (Platform.OS === 'web') {
+      if (!window.confirm('Delete this post?')) return;
+    }
+    await supabase.from('bc_comments').delete().eq('post_id', postId);
+    await supabase.from('bc_likes').delete().eq('post_id', postId);
+    await supabase.from('bc_posts').delete().eq('id', postId);
+    fetchPosts();
+  };
+
   const renderPost = ({ item }: { item: Post }) => (
     <View style={[ss.card, { backgroundColor: colors.card, borderColor: colors.cardBorder }]}>
       <View style={ss.header}>
@@ -133,9 +145,16 @@ export default function FeedScreen() {
           <Text style={[ss.username, { color: colors.text }]}>{item.bc_users.username}</Text>
           <Text style={[ss.timestamp, { color: colors.textMuted }]}>{timeAgo(item.created_at)}</Text>
         </View>
-        <View style={{ alignItems: 'flex-end' }}>
-          <Text style={[ss.drinkBadge, { color: colors.neonGreen }]}>{drinkTypeEmoji[item.drink_type] ?? '🥤'} {item.drink_name}</Text>
-          {item.rating && <Text style={{ color: colors.electricBlue, fontSize: 12, fontWeight: '700', marginTop: 2 }}>{'★'.repeat(Math.round(item.rating / 2))} {item.rating}/10</Text>}
+        <View style={{ alignItems: 'flex-end', flexDirection: 'row', gap: 8 }}>
+          <View>
+            <Text style={[ss.drinkBadge, { color: colors.neonGreen }]}>{drinkTypeEmoji[item.drink_type] ?? '🥤'} {item.drink_name}</Text>
+            {item.rating && <Text style={{ color: colors.electricBlue, fontSize: 12, fontWeight: '700', marginTop: 2 }}>{'★'.repeat(Math.round(item.rating / 2))} {item.rating}/10</Text>}
+          </View>
+          {item.user_id === user?.id && (
+            <TouchableOpacity onPress={() => deletePost(item.id)} style={{ padding: 4 }}>
+              <Text style={{ fontSize: 14 }}>🗑️</Text>
+            </TouchableOpacity>
+          )}
         </View>
       </View>
       {item.photo_url && <Image source={{ uri: item.photo_url }} style={[ss.photo, { backgroundColor: colors.surface }]} />}
