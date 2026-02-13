@@ -8,7 +8,7 @@ import { getUserBadges, BADGE_DEFS } from '../lib/badges';
 import { CAMPUS_TO_CITY, cityFromCampus, getSelectableCities } from '../data/cities';
 
 type Post = { id: string; drink_name: string; drink_type: string; brand: string | null; photo_url: string | null; created_at: string };
-type Badge = { badge_type: string; badge_name: string; badge_desc: string; earned_at: string };
+type Badge = { badge_type: string; badge_name: string; metadata?: { desc?: string; emoji?: string }; earned_at: string };
 
 export default function ProfileScreen() {
   const { user, signOut } = useAuth();

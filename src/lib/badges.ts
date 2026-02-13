@@ -44,9 +44,11 @@ export async function checkAndAwardBadges(userId: string) {
     const { data: check } = await supabase.from('bc_badges').select('id').eq('user_id', userId).eq('badge_type', type).eq('badge_name', name).limit(1);
     if (check && check.length > 0) return;
     const def = BADGE_DEFS.find(d => d.type === type && d.name === name);
-    await supabase.from('bc_badges').insert({
-      user_id: userId, badge_type: type, badge_name: name, badge_desc: def?.desc || '',
+    const { error } = await supabase.from('bc_badges').insert({
+      user_id: userId, badge_type: type, badge_name: name,
+      metadata: { desc: def?.desc || '', emoji: def?.emoji || '🏅' },
     });
+    if (error) console.error('Badge award error:', error);
   };
 
   // Fetch user's posts
