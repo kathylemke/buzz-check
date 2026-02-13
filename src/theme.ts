@@ -24,7 +24,7 @@ export const drinkTypeLabels: Record<string, string> = {
   protein_shake: '💪 Protein Shake',
   coffee: '☕ Coffee',
   pre_workout: '🔥 Pre-Workout',
-  protein_powder: '🥛 Protein Powder',
+  powder: '🥛 Powder',
   other: '🥤 Other',
 };
 
@@ -33,6 +33,6 @@ export const drinkTypeEmoji: Record<string, string> = {
   protein_shake: '💪',
   coffee: '☕',
   pre_workout: '🔥',
-  protein_powder: '🥛',
+  powder: '🥛',
   other: '🥤',
 };
