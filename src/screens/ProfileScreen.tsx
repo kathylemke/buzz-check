@@ -5,7 +5,7 @@ import { fonts, drinkTypeEmoji, drinkTypeLabels } from '../theme';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { getUserBadges, BADGE_DEFS } from '../lib/badges';
-import { CAMPUS_TO_CITY, cityFromCampus } from '../data/cities';
+import { CAMPUS_TO_CITY, cityFromCampus, getSelectableCities } from '../data/cities';
 
 type Post = { id: string; drink_name: string; drink_type: string; brand: string | null; photo_url: string | null; created_at: string };
 type Badge = { badge_type: string; badge_name: string; badge_desc: string; earned_at: string };
@@ -22,6 +22,9 @@ export default function ProfileScreen() {
   const [editMode, setEditMode] = useState(false);
   const [campusInput, setCampusInput] = useState('');
   const [campusSuggestions, setCampusSuggestions] = useState<string[]>([]);
+  const [notInUni, setNotInUni] = useState(false);
+  const [citySearch, setCitySearch] = useState('');
+  const [citySuggestions, setCitySuggestions] = useState<string[]>([]);
   const [newUsername, setNewUsername] = useState('');
   const [newDisplayName, setNewDisplayName] = useState('');
   const [newPassword, setNewPassword] = useState('');
@@ -65,6 +68,23 @@ export default function ProfileScreen() {
     setProfile((p: any) => p ? { ...p, campus: c, city } : p);
     setCampusInput(c);
     setCampusSuggestions([]);
+    setNotInUni(false);
+  };
+
+  const onCitySearch = (text: string) => {
+    setCitySearch(text);
+    if (text.length < 2) { setCitySuggestions([]); return; }
+    const lower = text.toLowerCase();
+    setCitySuggestions(getSelectableCities().filter(c => c.toLowerCase().includes(lower)).slice(0, 8));
+  };
+
+  const pickCityDirect = async (city: string) => {
+    if (!user) return;
+    await supabase.from('bc_users').update({ campus: null, city }).eq('id', user.id);
+    setProfile((p: any) => p ? { ...p, campus: null, city } : p);
+    setCitySearch(city);
+    setCitySuggestions([]);
+    setEditMsg('✓ City set to ' + city);
   };
 
   const fetchData = useCallback(async () => {
@@ -232,6 +252,34 @@ export default function ProfileScreen() {
                         <Text style={{ color: colors.textMuted, fontSize: 11 }}>{CAMPUS_TO_CITY[c]}</Text>
                       </TouchableOpacity>
                     ))}
+                  </View>
+                )}
+
+                <TouchableOpacity onPress={() => setNotInUni(!notInUni)} style={{ marginTop: 12 }}>
+                  <Text style={{ color: colors.electricBlue, fontSize: fonts.sizes.xs, fontWeight: '600' }}>
+                    {notInUni ? '↑ Search university instead' : 'Not in university? Select your home city'}
+                  </Text>
+                </TouchableOpacity>
+
+                {notInUni && (
+                  <View style={{ marginTop: 8 }}>
+                    <TextInput
+                      style={{ backgroundColor: colors.inputBg, borderWidth: 1, borderColor: colors.inputBorder, borderRadius: 8, padding: 12, fontSize: fonts.sizes.sm, color: colors.text }}
+                      placeholder="Search city..."
+                      placeholderTextColor={colors.textMuted}
+                      value={citySearch}
+                      onChangeText={onCitySearch}
+                      autoCapitalize="words"
+                    />
+                    {citySuggestions.length > 0 && (
+                      <View style={{ backgroundColor: colors.surface, borderRadius: 8, marginTop: 4, borderWidth: 1, borderColor: colors.cardBorder }}>
+                        {citySuggestions.map(c => (
+                          <TouchableOpacity key={c} onPress={() => pickCityDirect(c)} style={{ padding: 10, borderBottomWidth: 1, borderBottomColor: colors.cardBorder }}>
+                            <Text style={{ color: colors.text, fontSize: fonts.sizes.sm }}>{c}</Text>
+                          </TouchableOpacity>
+                        ))}
+                      </View>
+                    )}
                   </View>
                 )}
               </View>

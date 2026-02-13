@@ -105,3 +105,8 @@ export function getAllCities(): string[] {
 
 // Featured cities always shown in leaderboard even if no users yet
 export const FEATURED_CITIES = ['San Francisco, CA', 'Chicago, IL', 'Washington, DC'];
+
+// All selectable cities for non-university users
+export function getSelectableCities(): string[] {
+  return [...new Set([...FEATURED_CITIES, ...Object.values(CAMPUS_TO_CITY)])].sort();
+}

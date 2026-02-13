@@ -3,7 +3,7 @@ import { View, Text, TextInput, TouchableOpacity, StyleSheet, KeyboardAvoidingVi
 import { useTheme } from '../contexts/ThemeContext';
 import { fonts } from '../theme';
 import { useAuth } from '../contexts/AuthContext';
-import { CAMPUS_TO_CITY, cityFromCampus } from '../data/cities';
+import { CAMPUS_TO_CITY, cityFromCampus, getSelectableCities } from '../data/cities';
 
 const ALL_CAMPUSES = Object.keys(CAMPUS_TO_CITY).sort();
 
@@ -16,6 +16,10 @@ export default function LoginScreen() {
   const [campus, setCampus] = useState('');
   const [campusSuggestions, setCampusSuggestions] = useState<string[]>([]);
   const [selectedCampus, setSelectedCampus] = useState('');
+  const [notInUni, setNotInUni] = useState(false);
+  const [citySearch, setCitySearch] = useState('');
+  const [citySuggestions, setCitySuggestions] = useState<string[]>([]);
+  const [selectedCity, setSelectedCity] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -32,15 +36,30 @@ export default function LoginScreen() {
     setCampusSuggestions([]);
   };
 
+  const onCitySearch = (text: string) => {
+    setCitySearch(text);
+    setSelectedCity('');
+    if (text.length < 2) { setCitySuggestions([]); return; }
+    const lower = text.toLowerCase();
+    setCitySuggestions(getSelectableCities().filter(c => c.toLowerCase().includes(lower)).slice(0, 8));
+  };
+
+  const pickCity = (c: string) => {
+    setSelectedCity(c);
+    setCitySearch(c);
+    setCitySuggestions([]);
+  };
+
   const handleSubmit = async () => {
     setError('');
     if (!username || !password) { setError('Please fill in all fields'); return; }
-    if (isSignUp && !selectedCampus) { setError('Please select your university'); return; }
+    if (isSignUp && !selectedCampus && !selectedCity) { setError('Please select your university or home city'); return; }
     setLoading(true);
     try {
       if (isSignUp) {
-        const city = cityFromCampus(selectedCampus);
-        await signUp(username, password, username, selectedCampus, city || undefined);
+        const city = notInUni ? selectedCity : (cityFromCampus(selectedCampus) || undefined);
+        const campusVal = notInUni ? undefined : selectedCampus;
+        await signUp(username, password, username, campusVal, city);
       } else {
         await signIn(username, password);
       }
@@ -60,8 +79,8 @@ export default function LoginScreen() {
         <TextInput style={{ backgroundColor: colors.inputBg, borderWidth: 1, borderColor: colors.inputBorder, borderRadius: 12, padding: 16, fontSize: fonts.sizes.md, color: colors.text, marginBottom: 12 }} placeholder="Password" placeholderTextColor={colors.textMuted} value={password} onChangeText={setPassword} secureTextEntry />
         {isSignUp && (
           <View style={{ marginBottom: 12 }}>
-            <TextInput style={{ backgroundColor: colors.inputBg, borderWidth: 1, borderColor: colors.inputBorder, borderRadius: 12, padding: 16, fontSize: fonts.sizes.md, color: colors.text }} placeholder="University (e.g. Virginia Tech)" placeholderTextColor={colors.textMuted} value={campus} onChangeText={(t) => { setCampus(t); setSelectedCampus(''); }} autoCapitalize="words" />
-            {campusSuggestions.length > 0 && (
+            {!notInUni && <TextInput style={{ backgroundColor: colors.inputBg, borderWidth: 1, borderColor: colors.inputBorder, borderRadius: 12, padding: 16, fontSize: fonts.sizes.md, color: colors.text }} placeholder="University (e.g. Virginia Tech)" placeholderTextColor={colors.textMuted} value={campus} onChangeText={(t) => { setCampus(t); setSelectedCampus(''); }} autoCapitalize="words" />}
+            {!notInUni && campusSuggestions.length > 0 && (
               <View style={{ backgroundColor: colors.card, borderRadius: 8, borderWidth: 1, borderColor: colors.cardBorder, marginTop: 4 }}>
                 {campusSuggestions.map(c => (
                   <TouchableOpacity key={c} onPress={() => pickCampus(c)} style={{ padding: 12, borderBottomWidth: 1, borderBottomColor: colors.cardBorder }}>
@@ -71,7 +90,29 @@ export default function LoginScreen() {
                 ))}
               </View>
             )}
-            {detectedCity && <Text style={{ color: colors.electricBlue, fontSize: 12, marginTop: 6 }}>📍 {detectedCity}</Text>}
+            {detectedCity && !notInUni && <Text style={{ color: colors.electricBlue, fontSize: 12, marginTop: 6 }}>📍 {detectedCity}</Text>}
+
+            <TouchableOpacity onPress={() => { setNotInUni(!notInUni); setSelectedCampus(''); setCampus(''); setSelectedCity(''); setCitySearch(''); }} style={{ marginTop: 10 }}>
+              <Text style={{ color: colors.electricBlue, fontSize: fonts.sizes.xs, fontWeight: '600' }}>
+                {notInUni ? '↑ Search university instead' : 'Not in university? Select your home city'}
+              </Text>
+            </TouchableOpacity>
+
+            {notInUni && (
+              <View style={{ marginTop: 8 }}>
+                <TextInput style={{ backgroundColor: colors.inputBg, borderWidth: 1, borderColor: colors.inputBorder, borderRadius: 12, padding: 16, fontSize: fonts.sizes.md, color: colors.text }} placeholder="Search city..." placeholderTextColor={colors.textMuted} value={citySearch} onChangeText={onCitySearch} autoCapitalize="words" />
+                {citySuggestions.length > 0 && (
+                  <View style={{ backgroundColor: colors.card, borderRadius: 8, borderWidth: 1, borderColor: colors.cardBorder, marginTop: 4 }}>
+                    {citySuggestions.map(c => (
+                      <TouchableOpacity key={c} onPress={() => pickCity(c)} style={{ padding: 12, borderBottomWidth: 1, borderBottomColor: colors.cardBorder }}>
+                        <Text style={{ color: colors.text, fontSize: fonts.sizes.sm }}>{c}</Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                )}
+                {selectedCity && <Text style={{ color: colors.electricBlue, fontSize: 12, marginTop: 6 }}>📍 {selectedCity}</Text>}
+              </View>
+            )}
           </View>
         )}
         <TouchableOpacity style={{ backgroundColor: colors.neonGreen, borderRadius: 12, padding: 16, alignItems: 'center', marginTop: 8 }} onPress={handleSubmit} disabled={loading}>
