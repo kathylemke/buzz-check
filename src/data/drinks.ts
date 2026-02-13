@@ -373,6 +373,12 @@ export const DRINK_BRANDS: DrinkBrand[] = [
   {
     name: 'Thorne', category: 'supplements', products: [
       { name: 'Creatine Monohydrate', flavors: ['Unflavored'] },
+      { name: 'Whey Protein Isolate', flavors: ['Chocolate', 'Vanilla'] },
+      { name: 'MediPro Vegan All-In-One', flavors: ['Chocolate', 'Vanilla'] },
+      { name: 'Amino Complex', flavors: ['Berry', 'Lemon'] },
+      { name: 'Catalyte', flavors: ['Lemon Lime', 'Berry', 'Orange'] },
+      { name: 'RecoveryPro', flavors: ['Vanilla', 'Chocolate'] },
+      { name: 'Daily Greens Plus', flavors: ['Berry', 'Apple Ginger'] },
     ],
   },
   {
@@ -464,6 +470,33 @@ export const DRINK_BRANDS: DrinkBrand[] = [
   {
     name: 'Ritual', category: 'supplements', products: [
       { name: 'Essential Protein', flavors: ['Vanilla', 'Chocolate'] },
+    ],
+  },
+  {
+    name: 'Truvani', category: 'supplements', products: [
+      { name: 'Plant Based Protein', flavors: ['Chocolate', 'Vanilla', 'Peanut Butter Chocolate', 'Chocolate Banana', 'Vanilla Chai', 'Berry', 'Unflavored'] },
+      { name: 'Marine Collagen', flavors: ['Unflavored'] },
+      { name: 'Turmeric', flavors: ['Original'] },
+    ],
+  },
+  {
+    name: 'Earth Fed Muscle', category: 'supplements', products: [
+      { name: 'Grass-Fed Whey Protein', flavors: ['Chocolate Fix', 'Vanilla Vibes', 'Sweet Vanilla', 'Chocolate PB', 'Unflavored'] },
+      { name: 'Up N\' Adam Pre-Workout', flavors: ['Blackberry Lemonade', 'Strawberry Pineapple', 'Cherry Limeade'] },
+      { name: 'Transcend Plant Protein', flavors: ['Chocolate', 'Vanilla'] },
+      { name: 'Creatine', flavors: ['Unflavored'] },
+    ],
+  },
+  {
+    name: 'Simple Truth', category: 'supplements', products: [
+      { name: 'Plant Protein Powder', flavors: ['Chocolate', 'Vanilla', 'Peanut Butter'] },
+      { name: 'Collagen Peptides', flavors: ['Unflavored'] },
+      { name: 'Green Superfood Powder', flavors: ['Original'] },
+    ],
+  },
+  {
+    name: 'Simple Truth', category: 'protein_shake', products: [
+      { name: 'Plant Protein Shake', flavors: ['Chocolate', 'Vanilla', 'Strawberry'] },
     ],
   },
   // ── Electrolytes ──
