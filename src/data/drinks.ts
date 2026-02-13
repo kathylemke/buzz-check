@@ -71,6 +71,43 @@ export const DRINK_BRANDS: DrinkBrand[] = [
       { name: 'Owyn Pro Elite', flavors: ['Chocolate', 'Vanilla', 'Cold Brew Coffee'] },
     ],
   },
+  {
+    name: 'Ripple', category: 'protein_shake', products: [
+      { name: 'Protein Shake', flavors: ['Chocolate', 'Vanilla', 'Coffee'] },
+    ],
+  },
+  {
+    name: 'Koia', category: 'protein_shake', products: [
+      { name: 'Plant Protein Shake', flavors: ['Chocolate Banana', 'Vanilla Bean', 'Cinnamon Horchata', 'Chocolate Brownie', 'Cold Brew Coffee', 'Coconut Almond'] },
+      { name: 'Koia Thrive', flavors: ['Chocolate', 'Vanilla'] },
+    ],
+  },
+  {
+    name: 'Evolve', category: 'protein_shake', products: [
+      { name: 'Plant Protein Shake', flavors: ['Ideal Vanilla', 'Double Chocolate', 'Berry Medley', 'Mellow Mocha'] },
+    ],
+  },
+  {
+    name: 'Aloha', category: 'protein_shake', products: [
+      { name: 'Organic Plant Protein Shake', flavors: ['Chocolate Sea Salt', 'Vanilla', 'Chocolate Caramel Pecan', 'Strawberry Lemonade'] },
+    ],
+  },
+  {
+    name: 'Silk', category: 'protein_shake', products: [
+      { name: 'Protein Almond & Cashew', flavors: ['Chocolate', 'Vanilla', 'Caramel'] },
+    ],
+  },
+  {
+    name: 'Rebbl', category: 'protein_shake', products: [
+      { name: 'Plant Protein Elixir', flavors: ['Dark Chocolate', 'Vanilla Spice', 'Banana Nut', 'Cold Brew Coffee'] },
+    ],
+  },
+  {
+    name: 'Soylent', category: 'protein_shake', products: [
+      { name: 'Complete Protein', flavors: ['Chocolate', 'Vanilla', 'Strawberry', 'Mint Chocolate'] },
+      { name: 'Complete Nutrition', flavors: ['Original', 'Cacao', 'Vanilla', 'Creamy Chocolate', 'Cafe Coffiest'] },
+    ],
+  },
 
   // ── Energy Drinks ──
   {
@@ -368,6 +405,65 @@ export const DRINK_BRANDS: DrinkBrand[] = [
   {
     name: 'Nested Naturals', category: 'supplements', products: [
       { name: 'Super Greens', flavors: ['Original', 'Berry'] },
+    ],
+  },
+  {
+    name: 'Vega', category: 'supplements', products: [
+      { name: 'Vega One All-in-One', flavors: ['Chocolate', 'French Vanilla', 'Berry', 'Mocha', 'Coconut Almond', 'Plain Unsweetened'] },
+      { name: 'Vega Sport Premium Protein', flavors: ['Chocolate', 'Vanilla', 'Peanut Butter', 'Berry', 'Mocha'] },
+      { name: 'Vega Protein & Greens', flavors: ['Chocolate', 'Vanilla', 'Berry', 'Salted Caramel', 'Coconut Almond'] },
+      { name: 'Vega Essentials', flavors: ['Chocolate', 'Vanilla', 'Mocha', 'Strawberry Banana'] },
+    ],
+  },
+  {
+    name: 'Sunwarrior', category: 'supplements', products: [
+      { name: 'Classic Plus', flavors: ['Chocolate', 'Vanilla', 'Berry', 'Natural'] },
+      { name: 'Warrior Blend', flavors: ['Chocolate', 'Vanilla', 'Berry', 'Mocha', 'Natural'] },
+      { name: 'Collagen Building Peptides', flavors: ['Chocolate Fudge', 'Vanilla', 'Salted Caramel', 'Natural'] },
+    ],
+  },
+  {
+    name: 'PlantFusion', category: 'supplements', products: [
+      { name: 'Complete Protein', flavors: ['Chocolate', 'Vanilla Bean', 'Cookies & Cream', 'Rich Chocolate', 'Natural', 'Peanut Butter'] },
+      { name: 'Complete Meal', flavors: ['Creamy Vanilla Bean', 'Chocolate Caramel'] },
+    ],
+  },
+  {
+    name: 'KOS', category: 'supplements', products: [
+      { name: 'Organic Plant Protein', flavors: ['Chocolate', 'Vanilla', 'Blueberry Muffin', 'Chocolate Peanut Butter', 'Salted Caramel', 'Unflavored'] },
+      { name: 'Show Me The Greens', flavors: ['Green Apple Sorbet', 'Original'] },
+    ],
+  },
+  {
+    name: 'Nuzest', category: 'supplements', products: [
+      { name: 'Clean Lean Protein', flavors: ['Rich Chocolate', 'Smooth Vanilla', 'Real Coffee', 'Wild Strawberry', 'Just Natural'] },
+      { name: 'Good Green Vitality', flavors: ['Original'] },
+    ],
+  },
+  {
+    name: 'Aloha', category: 'supplements', products: [
+      { name: 'Organic Plant Protein Powder', flavors: ['Chocolate Sea Salt', 'Vanilla', 'Banana'] },
+    ],
+  },
+  {
+    name: 'Tone It Up', category: 'supplements', products: [
+      { name: 'Plant-Based Protein', flavors: ['Chocolate', 'Vanilla', 'Peanut Butter Chocolate', 'Coconut'] },
+    ],
+  },
+  {
+    name: 'Four Sigmatic', category: 'supplements', products: [
+      { name: 'Plant-Based Protein', flavors: ['Sweet Vanilla', 'Creamy Cacao', 'Peanut Butter'] },
+      { name: 'Mushroom Coffee', flavors: ['Think (Lion\'s Mane)', 'Chill (Reishi)', 'Balance', 'Gut Health'] },
+    ],
+  },
+  {
+    name: 'Evolve', category: 'supplements', products: [
+      { name: 'Ideal Vanilla Protein Powder', flavors: ['Ideal Vanilla', 'Double Chocolate', 'Classic Chocolate'] },
+    ],
+  },
+  {
+    name: 'Ritual', category: 'supplements', products: [
+      { name: 'Essential Protein', flavors: ['Vanilla', 'Chocolate'] },
     ],
   },
   // ── Electrolytes ──
