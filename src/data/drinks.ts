@@ -57,7 +57,6 @@ export const DRINK_BRANDS: DrinkBrand[] = [
     name: 'Premier Protein', category: 'protein_shake', products: [
       { name: 'Premier Protein Shake', flavors: ['Chocolate', 'Vanilla', 'Caramel', 'Café Latte', 'Cookies & Cream', 'Strawberries & Cream', 'Bananas & Cream', 'Peaches & Cream'] },
       { name: 'Premier Protein Clear', flavors: ['Tropical Punch', 'Raspberry', 'Lemon'] },
-      { name: 'Premier Protein Powder', flavors: ['Chocolate Milkshake', 'Vanilla Milkshake', 'Café Latte'] },
     ],
   },
   {
@@ -70,18 +69,6 @@ export const DRINK_BRANDS: DrinkBrand[] = [
     name: 'Owyn', category: 'protein_shake', products: [
       { name: 'Owyn Protein Shake', flavors: ['Dark Chocolate', 'Vanilla', 'Strawberry Banana', 'Cookies & Cream', 'Chai'] },
       { name: 'Owyn Pro Elite', flavors: ['Chocolate', 'Vanilla', 'Cold Brew Coffee'] },
-    ],
-  },
-  {
-    name: 'Ghost', category: 'protein_shake', products: [
-      { name: 'Ghost Whey', flavors: ['Cereal Milk', 'Peanut Butter Cereal Milk', 'Coffee Ice Cream', 'Chocolate Cereal Milk', 'Chips Ahoy', 'Nutter Butter'] },
-      { name: 'Ghost Vegan', flavors: ['Peanut Butter Cereal Milk', 'Chocolate Cereal Milk', 'Banana Pancake Batter'] },
-    ],
-  },
-  {
-    name: 'Dymatize', category: 'protein_shake', products: [
-      { name: 'ISO100', flavors: ['Gourmet Chocolate', 'Gourmet Vanilla', 'Cookies & Cream', 'Fruity Pebbles', 'Cocoa Pebbles', 'Strawberry'] },
-      { name: 'Elite 100% Whey', flavors: ['Rich Chocolate', 'Vanilla', 'Cookies & Cream'] },
     ],
   },
 
@@ -427,4 +414,14 @@ export function getBrandProducts(brandName: string): DrinkProduct[] {
 export function getProductFlavors(brandName: string, productName: string): string[] {
   const brand = DRINK_BRANDS.find((b) => b.name === brandName);
   return brand?.products.find((p) => p.name === productName)?.flavors ?? [];
+}
+
+export function searchBrands(query: string): DrinkBrand[] {
+  if (!query.trim()) return [];
+  const q = query.toLowerCase();
+  return DRINK_BRANDS.filter((b) => b.name.toLowerCase().includes(q));
+}
+
+export function getCategoryForBrand(brandName: string): DrinkCategory | null {
+  return DRINK_BRANDS.find((b) => b.name === brandName)?.category ?? null;
 }

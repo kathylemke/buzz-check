@@ -5,7 +5,7 @@ import { useTheme } from '../contexts/ThemeContext';
 import { fonts } from '../theme';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
-import { DRINK_CATEGORIES, getBrandsByCategory, getBrandProducts, getProductFlavors, DrinkCategory } from '../data/drinks';
+import { DRINK_CATEGORIES, getBrandsByCategory, getBrandProducts, getProductFlavors, DrinkCategory, searchBrands, getCategoryForBrand } from '../data/drinks';
 import { cityFromCampus, getSelectableCities } from '../data/cities';
 import { checkAndAwardBadges } from '../lib/badges';
 
@@ -26,6 +26,7 @@ export default function NewPostScreen({ navigation }: any) {
   const [rating, setRating] = useState<number>(0);
   const [isPrivate, setIsPrivate] = useState(false);
   const [city, setCity] = useState<string>('');
+  const [brandSearch, setBrandSearch] = useState('');
 
   useEffect(() => {
     if (user) {
@@ -38,7 +39,7 @@ export default function NewPostScreen({ navigation }: any) {
 
   const reset = () => {
     setStep('category'); setCategory(null); setBrand(null); setProduct(null);
-    setFlavor(''); setCustomFlavor(''); setCaption(''); setImageUri(null); setRating(0); setIsPrivate(false);
+    setFlavor(''); setCustomFlavor(''); setCaption(''); setImageUri(null); setRating(0); setIsPrivate(false); setBrandSearch('');
   };
 
   const pickImage = async () => {
@@ -106,19 +107,49 @@ export default function NewPostScreen({ navigation }: any) {
   ) : null;
 
   if (step === 'category') {
+    const searchResults = searchBrands(brandSearch);
     return (
       <ScrollView style={s.container} contentContainerStyle={s.content}>
         <Text style={s.title}>🥤 New Check-In</Text>
         {renderStepIndicator()}
-        <Text style={s.stepLabel}>What are you drinking?</Text>
-        <View style={s.catGrid}>
-          {DRINK_CATEGORIES.map(c => (
-            <TouchableOpacity key={c.key} style={s.catCard} onPress={() => { setCategory(c.key); setStep('brand'); }}>
-              <Text style={{ fontSize: 36, marginBottom: 8 }}>{c.emoji}</Text>
-              <Text style={{ color: colors.text, fontSize: fonts.sizes.md, fontWeight: '700' }}>{c.label}</Text>
-            </TouchableOpacity>
-          ))}
-        </View>
+        <TextInput
+          style={[s.input, { marginBottom: 16 }]}
+          placeholder="🔍 Search all brands..."
+          placeholderTextColor={colors.textMuted}
+          value={brandSearch}
+          onChangeText={setBrandSearch}
+        />
+        {brandSearch.trim() ? (
+          <View style={{ gap: 2 }}>
+            {searchResults.length === 0 && (
+              <Text style={{ color: colors.textMuted, textAlign: 'center', marginVertical: 20 }}>No brands found</Text>
+            )}
+            {searchResults.map(b => {
+              const catInfo = DRINK_CATEGORIES.find(c => c.key === b.category);
+              return (
+                <TouchableOpacity key={`${b.name}-${b.category}`} style={s.listItem} onPress={() => { setCategory(b.category); setBrand(b.name); setBrandSearch(''); setStep('product'); }}>
+                  <View>
+                    <Text style={{ color: colors.text, fontSize: fonts.sizes.md, fontWeight: '600' }}>{b.name}</Text>
+                    <Text style={{ color: colors.textMuted, fontSize: fonts.sizes.sm }}>{catInfo?.emoji} {catInfo?.label}</Text>
+                  </View>
+                  <Text style={{ color: colors.textMuted, fontSize: 22 }}>›</Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        ) : (
+          <>
+            <Text style={s.stepLabel}>What are you drinking?</Text>
+            <View style={s.catGrid}>
+              {DRINK_CATEGORIES.map(c => (
+                <TouchableOpacity key={c.key} style={s.catCard} onPress={() => { setCategory(c.key); setStep('brand'); }}>
+                  <Text style={{ fontSize: 36, marginBottom: 8 }}>{c.emoji}</Text>
+                  <Text style={{ color: colors.text, fontSize: fonts.sizes.md, fontWeight: '700' }}>{c.label}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </>
+        )}
       </ScrollView>
     );
   }
