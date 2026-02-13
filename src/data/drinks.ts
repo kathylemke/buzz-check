@@ -15,7 +15,7 @@ export type DrinkBrand = {
 export const DRINK_CATEGORIES: { key: DrinkCategory; label: string; emoji: string }[] = [
   { key: 'protein_shake', label: 'Protein Shakes', emoji: '💪' },
   { key: 'energy_drink', label: 'Energy', emoji: '⚡' },
-  { key: 'coffee', label: 'Coffee', emoji: '☕' },
+  { key: 'coffee', label: 'Coffee & Tea', emoji: '☕' },
   { key: 'pre_workout', label: 'Pre-Workout', emoji: '🔥' },
   { key: 'supplements', label: 'Supplements', emoji: '🥛' },
   { key: 'electrolytes', label: 'Electrolytes', emoji: '💧' },
@@ -253,6 +253,58 @@ export const DRINK_BRANDS: DrinkBrand[] = [
       { name: 'Frozen Cold Brew', flavors: ['Chocolate', 'Caramel', 'Vanilla'] },
       { name: 'Charged Lemonade', flavors: ['Strawberry Lemon Mint', 'Fuji Apple Cranberry', 'Mango Yuzu Citrus'] },
       { name: 'Hot Tea', flavors: ['English Breakfast', 'Green', 'Chai', 'Mint'] },
+    ],
+  },
+  {
+    name: 'Tazo', category: 'coffee', products: [
+      { name: 'Classic Tea', flavors: ['Zen Green', 'Awake English Breakfast', 'Earl Grey', 'Calm Chamomile', 'Passion Herbal', 'Chai'] },
+      { name: 'Iced Tea', flavors: ['Iced Passion', 'Iced Peachy Green', 'Iced Lemon Ginger', 'Giant Peach'] },
+    ],
+  },
+  {
+    name: 'Teavana', category: 'coffee', products: [
+      { name: 'Hot Tea', flavors: ['Jade Citrus Mint', 'Emperor\'s Clouds & Mist', 'Mint Majesty', 'Peach Tranquility', 'Royal English Breakfast', 'Earl Grey'] },
+      { name: 'Iced Tea', flavors: ['Shaken Iced Tea', 'Iced Passion Tango', 'Iced Peach Green', 'Iced Black Tea Lemonade'] },
+    ],
+  },
+  {
+    name: 'Celestial Seasonings', category: 'coffee', products: [
+      { name: 'Herbal Tea', flavors: ['Sleepytime', 'Honey Vanilla Chamomile', 'Peppermint', 'Lemon Zinger', 'Country Peach Passion', 'Bengal Spice', 'Tension Tamer'] },
+      { name: 'Green Tea', flavors: ['Authentic Green', 'Honey Lemon Ginseng', 'Decaf Mandarin Orchard', 'Raspberry Gardens'] },
+    ],
+  },
+  {
+    name: 'Yogi', category: 'coffee', products: [
+      { name: 'Tea', flavors: ['Bedtime', 'DeTox', 'Egyptian Licorice', 'Green Tea Super Antioxidant', 'Honey Lavender Stress Relief', 'Kava Stress Relief', 'Lemon Ginger', 'Vanilla Spice Perfect Energy'] },
+    ],
+  },
+  {
+    name: 'Bigelow', category: 'coffee', products: [
+      { name: 'Tea', flavors: ['Constant Comment', 'Earl Grey', 'English Breakfast', 'Green Tea', 'Lemon Lift', 'Peppermint', 'Chamomile'] },
+    ],
+  },
+  {
+    name: 'Harney & Sons', category: 'coffee', products: [
+      { name: 'Tea', flavors: ['Paris', 'Hot Cinnamon Spice', 'Earl Grey Supreme', 'Peppermint Herbal', 'Japanese Sencha', 'English Breakfast', 'Dragon Pearl Jasmine'] },
+    ],
+  },
+  {
+    name: 'Boba Guys', category: 'coffee', products: [
+      { name: 'Milk Tea', flavors: ['Classic', 'Jasmine', 'Matcha', 'Strawberry Matcha', 'Taro', 'Thai'] },
+      { name: 'Fruit Tea', flavors: ['Passion Fruit', 'Mango', 'Lychee', 'Peach'] },
+    ],
+  },
+  {
+    name: 'Kung Fu Tea', category: 'coffee', products: [
+      { name: 'Milk Tea', flavors: ['Classic', 'Taro', 'Thai', 'Honey', 'Matcha', 'Brown Sugar'] },
+      { name: 'Punch', flavors: ['Mango', 'Passion Fruit', 'Peach', 'Strawberry'] },
+      { name: 'Slush', flavors: ['Taro', 'Mango', 'Strawberry', 'Matcha'] },
+    ],
+  },
+  {
+    name: 'Matcha', category: 'coffee', products: [
+      { name: 'Matcha Latte', flavors: ['Traditional', 'Vanilla', 'Oat Milk', 'Honey', 'Lavender', 'Iced'] },
+      { name: 'Matcha Shot', flavors: ['Pure', 'Ginger', 'Mint'] },
     ],
   },
   // 7 Brew energy under energy_drink category
