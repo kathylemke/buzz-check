@@ -13,7 +13,7 @@ type AuthContextType = {
   session: { user: BCUser } | null;
   user: BCUser | null;
   loading: boolean;
-  signUp: (email: string, password: string, username: string) => Promise<void>;
+  signUp: (email: string, password: string, username: string, campus?: string, city?: string) => Promise<void>;
   signIn: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
 };
@@ -59,7 +59,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setLoading(false);
   }, []);
 
-  const signUp = async (_email: string, password: string, username: string) => {
+  const signUp = async (_email: string, password: string, username: string, campus?: string, city?: string) => {
     // Check if username taken
     const { data: existing } = await supabase.from('bc_users').select('id').eq('username', username).single();
     if (existing) throw new Error('Username already taken');
@@ -72,10 +72,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       username,
       display_name: username,
       password_hash: passHash,
+      ...(campus ? { campus } : {}),
+      ...(city ? { city } : {}),
     });
     if (error) throw new Error(error.message);
     
-    const newUser = { id, username, display_name: username, campus: null };
+    const newUser = { id, username, display_name: username, campus: campus || null, city: city || null };
     saveUser(newUser);
     setUser(newUser);
   };

@@ -1,12 +1,12 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { View, Text, FlatList, TouchableOpacity, StyleSheet, RefreshControl } from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, RefreshControl, ScrollView } from 'react-native';
 import { useTheme } from '../contexts/ThemeContext';
 import { fonts } from '../theme';
 import { supabase } from '../lib/supabase';
-import { CITIES, City } from '../data/cities';
+import { getAllCities } from '../data/cities';
 
 type Period = 'week' | 'month' | 'year';
-type Scope = 'all' | City;
+type Scope = 'all' | string;
 type LeaderEntry = { user_id: string; username: string; count: number; rank: number };
 
 export default function LeaderboardScreen() {
@@ -23,8 +23,16 @@ export default function LeaderboardScreen() {
     else if (period === 'month') since = new Date(now.getTime() - 30 * 86400000).toISOString();
     else since = new Date(now.getFullYear(), 0, 1).toISOString();
 
+    // If filtering by city, first get users in that city, then their posts
+    let cityUserIds: string[] | null = null;
+    if (scope !== 'all') {
+      const { data: cityUsers } = await supabase.from('bc_users').select('id').eq('city', scope);
+      if (!cityUsers || cityUsers.length === 0) { setData([]); return; }
+      cityUserIds = cityUsers.map(u => u.id);
+    }
+
     let query = supabase.from('bc_posts').select('user_id').gte('created_at', since).eq('is_private', false);
-    if (scope !== 'all') query = query.eq('city', scope);
+    if (cityUserIds) query = query.in('user_id', cityUserIds);
 
     const { data: posts } = await query;
     if (!posts) { setData([]); return; }
@@ -66,16 +74,16 @@ export default function LeaderboardScreen() {
       </View>
 
       {/* Scope toggle */}
-      <View style={[s.toggleRow, { backgroundColor: colors.surface }]}>
-        <TouchableOpacity style={[s.toggleBtn, scope === 'all' && { backgroundColor: colors.electricBlue }]} onPress={() => setScope('all')}>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginHorizontal: 16, marginBottom: 8 }}>
+        <TouchableOpacity style={[s.cityChip, scope === 'all' && { backgroundColor: colors.electricBlue }]} onPress={() => setScope('all')}>
           <Text style={[s.toggleText, { color: colors.textMuted }, scope === 'all' && { color: colors.bg }]}>All Cities</Text>
         </TouchableOpacity>
-        {CITIES.map(c => (
-          <TouchableOpacity key={c} style={[s.toggleBtn, scope === c && { backgroundColor: colors.electricBlue }]} onPress={() => setScope(c)}>
+        {getAllCities().map(c => (
+          <TouchableOpacity key={c} style={[s.cityChip, scope === c && { backgroundColor: colors.electricBlue }]} onPress={() => setScope(c)}>
             <Text style={[s.toggleText, { color: colors.textMuted }, scope === c && { color: colors.bg }]} numberOfLines={1}>{c}</Text>
           </TouchableOpacity>
         ))}
-      </View>
+      </ScrollView>
 
       <FlatList
         data={data}
@@ -111,4 +119,5 @@ const s = StyleSheet.create({
   username: { flex: 1, fontWeight: '700', fontSize: fonts.sizes.md },
   count: { fontWeight: '900', fontSize: fonts.sizes.lg },
   empty: { textAlign: 'center', marginTop: 60, fontSize: fonts.sizes.md },
+  cityChip: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 16, marginRight: 6, backgroundColor: 'rgba(255,255,255,0.08)' },
 });
