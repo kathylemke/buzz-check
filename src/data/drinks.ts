@@ -1,4 +1,4 @@
-export type DrinkCategory = 'protein_shake' | 'energy_drink' | 'coffee' | 'pre_workout' | 'other';
+export type DrinkCategory = 'protein_shake' | 'energy_drink' | 'coffee' | 'pre_workout' | 'protein_powder' | 'other';
 
 export type DrinkProduct = {
   name: string;
@@ -17,6 +17,7 @@ export const DRINK_CATEGORIES: { key: DrinkCategory; label: string; emoji: strin
   { key: 'energy_drink', label: 'Energy', emoji: '⚡' },
   { key: 'coffee', label: 'Coffee', emoji: '☕' },
   { key: 'pre_workout', label: 'Pre-Workout', emoji: '🔥' },
+  { key: 'protein_powder', label: 'Protein Powder', emoji: '🥛' },
   { key: 'other', label: 'Other', emoji: '🥤' },
 ];
 
@@ -246,6 +247,76 @@ export const DRINK_BRANDS: DrinkBrand[] = [
     name: 'Beyond Raw', category: 'pre_workout', products: [
       { name: 'LIT', flavors: ['Fruit Punch', 'Blue Lemonade', 'Gummy Worm', 'Icy Rocket', 'Sour Gummy Worm', 'Watermelon Lemonade'] },
       { name: 'LIT AF', flavors: ['Icy Fireworks', 'Gummy Worm', 'Sweet & Tart'] },
+    ],
+  },
+  // ── Protein Powder ──
+  {
+    name: 'Optimum Nutrition', category: 'protein_powder', products: [
+      { name: 'Gold Standard 100% Whey', flavors: ['Double Rich Chocolate', 'Vanilla Ice Cream', 'Extreme Milk Chocolate', 'Strawberry Banana', 'Mocha Cappuccino', 'Banana Cream', 'Cookies & Cream', 'Delicious Strawberry', 'Chocolate Peanut Butter', 'French Vanilla', 'White Chocolate', 'Chocolate Malt', 'Chocolate Mint', 'Coffee', 'Rocky Road', 'Salted Caramel'] },
+      { name: 'Gold Standard Casein', flavors: ['Chocolate Supreme', 'Creamy Vanilla', 'Strawberry Smoothie', 'Chocolate Peanut Butter'] },
+      { name: 'Gold Standard Plant', flavors: ['Chocolate', 'Vanilla', 'Berry'] },
+    ],
+  },
+  {
+    name: 'Dymatize', category: 'protein_powder', products: [
+      { name: 'ISO100', flavors: ['Gourmet Chocolate', 'Fudge Brownie', 'Vanilla', 'Strawberry', 'Cookies & Cream', 'Peanut Butter', 'Birthday Cake', 'Chocolate Peanut Butter', 'Dunks Cinnamon Cereal', 'Fruity Pebbles', 'Cocoa Pebbles'] },
+      { name: 'Elite 100% Whey', flavors: ['Rich Chocolate', 'Vanilla Cupcake', 'Cookies & Cream'] },
+    ],
+  },
+  {
+    name: 'Ghost', category: 'protein_powder', products: [
+      { name: 'Ghost Whey', flavors: ['Chips Ahoy!', 'Nutter Butter', 'Oreo', 'Cereal Milk', 'Peanut Butter Cereal Milk', 'Coffee Ice Cream', 'Fruity Cereal Milk', 'Chocolate Chip Cookie', 'Marshmallow Cereal Milk'] },
+      { name: 'Ghost Vegan', flavors: ['Peanut Butter Cereal Milk', 'Chocolate Cereal Milk', 'Banana Pancake Batter'] },
+    ],
+  },
+  {
+    name: 'Transparent Labs', category: 'protein_powder', products: [
+      { name: '100% Grass-Fed Whey', flavors: ['Chocolate Peanut Butter', 'Mocha', 'Vanilla Peanut Butter', 'Cinnamon French Toast', 'Milk Chocolate', 'French Vanilla', 'Strawberry'] },
+      { name: 'Casein', flavors: ['Chocolate', 'Vanilla'] },
+      { name: 'Plant Protein', flavors: ['Chocolate', 'Vanilla', 'Strawberry'] },
+    ],
+  },
+  {
+    name: 'Muscle Milk', category: 'protein_powder', products: [
+      { name: 'Genuine Protein Powder', flavors: ['Chocolate', 'Vanilla Creme', 'Strawberry', 'Cookies N Cream', 'Banana Cream'] },
+      { name: '100% Whey', flavors: ['Chocolate', 'Vanilla'] },
+    ],
+  },
+  {
+    name: 'MyProtein', category: 'protein_powder', products: [
+      { name: 'Impact Whey Protein', flavors: ['Chocolate Smooth', 'Vanilla', 'Strawberry Cream', 'Natural Chocolate', 'Cookies & Cream', 'Mocha', 'Salted Caramel', 'Chocolate Brownie', 'Blueberry', 'Banana', 'Unflavored'] },
+      { name: 'Impact Whey Isolate', flavors: ['Chocolate Smooth', 'Vanilla', 'Strawberry Cream', 'Salted Caramel', 'Natural Chocolate'] },
+      { name: 'Clear Whey Isolate', flavors: ['Peach Tea', 'Lemonade', 'Orange Mango', 'Bitter Lemon', 'Mojito', 'Rainbow Candy'] },
+    ],
+  },
+  {
+    name: 'Orgain', category: 'protein_powder', products: [
+      { name: 'Organic Protein', flavors: ['Chocolate Fudge', 'Vanilla Bean', 'Peanut Butter', 'Creamy Chocolate Fudge', 'Natural Unsweetened'] },
+      { name: 'Sport Protein', flavors: ['Chocolate', 'Vanilla'] },
+    ],
+  },
+  {
+    name: 'Naked Nutrition', category: 'protein_powder', products: [
+      { name: 'Naked Whey', flavors: ['Unflavored', 'Chocolate', 'Vanilla', 'Strawberry'] },
+      { name: 'Naked Casein', flavors: ['Unflavored', 'Chocolate'] },
+      { name: 'Naked Pea', flavors: ['Unflavored', 'Chocolate'] },
+    ],
+  },
+  {
+    name: 'Garden of Life', category: 'protein_powder', products: [
+      { name: 'Organic Plant Protein', flavors: ['Chocolate', 'Vanilla', 'Vanilla Chai', 'Unflavored'] },
+      { name: 'Sport Plant Protein', flavors: ['Chocolate', 'Vanilla'] },
+    ],
+  },
+  {
+    name: 'Premier Protein', category: 'protein_powder', products: [
+      { name: 'Protein Powder', flavors: ['Chocolate Milkshake', 'Vanilla Milkshake', 'Cafe Latte'] },
+    ],
+  },
+  {
+    name: 'Isopure', category: 'protein_powder', products: [
+      { name: 'Zero Carb Protein', flavors: ['Creamy Vanilla', 'Dutch Chocolate', 'Cookies & Cream', 'Strawberries & Cream', 'Banana Cream', 'Unflavored'] },
+      { name: 'Infusions', flavors: ['Tropical Punch', 'Mixed Berry', 'Mango Lime', 'Citrus Lemonade'] },
     ],
   },
 ];
