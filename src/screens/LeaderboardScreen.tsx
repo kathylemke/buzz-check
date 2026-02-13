@@ -44,7 +44,7 @@ export default function LeaderboardScreen() {
       cityUserIds = cityUsers.map(u => u.id);
     }
 
-    let query = supabase.from('bc_posts').select('user_id').gte('created_at', since).eq('is_private', false);
+    let query = supabase.from('bc_posts').select('user_id').gte('created_at', since);
     if (cityUserIds) query = query.in('user_id', cityUserIds);
 
     const { data: posts } = await query;
