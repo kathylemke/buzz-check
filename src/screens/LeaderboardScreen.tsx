@@ -8,23 +8,26 @@ import { FEATURED_CITIES } from '../data/cities';
 
 type Period = 'week' | 'month' | 'year';
 type BoardType = 'city' | 'campus';
+type ViewMode = 'users' | 'totals';
 type Scope = 'all' | string;
 type LeaderEntry = { user_id: string; username: string; count: number; rank: number };
+type TotalEntry = { name: string; count: number; rank: number; userCount: number };
 
 export default function LeaderboardScreen({ navigation }: any) {
   const { colors } = useTheme();
   const { user } = useAuth();
   const [period, setPeriod] = useState<Period>('week');
   const [boardType, setBoardType] = useState<BoardType>('campus');
+  const [viewMode, setViewMode] = useState<ViewMode>('totals');
   const [scope, setScope] = useState<Scope>('all');
   const [data, setData] = useState<LeaderEntry[]>([]);
+  const [totals, setTotals] = useState<TotalEntry[]>([]);
   const [activeCities, setActiveCities] = useState<string[]>(FEATURED_CITIES);
   const [activeCampuses, setActiveCampuses] = useState<string[]>([]);
   const [refreshing, setRefreshing] = useState(false);
   const [myCity, setMyCity] = useState<string | null>(null);
   const [myCampus, setMyCampus] = useState<string | null>(null);
 
-  // Fetch user's city/campus and active options
   useEffect(() => {
     (async () => {
       if (user) {
@@ -35,28 +38,64 @@ export default function LeaderboardScreen({ navigation }: any) {
       const { data: users } = await supabase.from('bc_users').select('city, campus');
       if (users) {
         const userCities = [...new Set(users.map((u: any) => u.city).filter(Boolean))] as string[];
-        const merged = [...new Set([...FEATURED_CITIES, ...userCities])].sort();
-        setActiveCities(merged);
-
+        setActiveCities([...new Set([...FEATURED_CITIES, ...userCities])].sort());
         const userCampuses = [...new Set(users.map((u: any) => u.campus).filter(Boolean))] as string[];
         setActiveCampuses(userCampuses.sort());
       }
     })();
   }, [user]);
 
-  // Auto-select user's campus/city when switching board type
   useEffect(() => {
-    if (boardType === 'campus' && myCampus) setScope(myCampus);
-    else if (boardType === 'city' && myCity) setScope(myCity);
-    else setScope('all');
-  }, [boardType, myCampus, myCity]);
+    if (viewMode === 'users') {
+      if (boardType === 'campus' && myCampus) setScope(myCampus);
+      else if (boardType === 'city' && myCity) setScope(myCity);
+      else setScope('all');
+    }
+  }, [boardType, myCampus, myCity, viewMode]);
 
-  const fetchLeaderboard = useCallback(async () => {
+  const getSince = () => {
     const now = new Date();
-    let since: string;
-    if (period === 'week') since = new Date(now.getTime() - 7 * 86400000).toISOString();
-    else if (period === 'month') since = new Date(now.getTime() - 30 * 86400000).toISOString();
-    else since = new Date(now.getFullYear(), 0, 1).toISOString();
+    if (period === 'week') return new Date(now.getTime() - 7 * 86400000).toISOString();
+    if (period === 'month') return new Date(now.getTime() - 30 * 86400000).toISOString();
+    return new Date(now.getFullYear(), 0, 1).toISOString();
+  };
+
+  const fetchTotals = useCallback(async () => {
+    const since = getSince();
+    const field = boardType === 'campus' ? 'campus' : 'city';
+    
+    // Get all users with their campus/city
+    const { data: users } = await supabase.from('bc_users').select(`id, ${field}`);
+    if (!users) { setTotals([]); return; }
+    
+    const userToGroup: Record<string, string> = {};
+    for (const u of users) {
+      if ((u as any)[field]) userToGroup[u.id] = (u as any)[field];
+    }
+
+    // Get posts in period
+    const { data: posts } = await supabase.from('bc_posts').select('user_id').gte('created_at', since);
+    if (!posts) { setTotals([]); return; }
+
+    const groupCounts: Record<string, { count: number; users: Set<string> }> = {};
+    for (const p of posts) {
+      const group = userToGroup[p.user_id];
+      if (!group) continue;
+      if (!groupCounts[group]) groupCounts[group] = { count: 0, users: new Set() };
+      groupCounts[group].count++;
+      groupCounts[group].users.add(p.user_id);
+    }
+
+    const sorted = Object.entries(groupCounts)
+      .map(([name, { count, users }]) => ({ name, count, userCount: users.size, rank: 0 }))
+      .sort((a, b) => b.count - a.count)
+      .map((e, i) => ({ ...e, rank: i + 1 }));
+
+    setTotals(sorted.slice(0, 50));
+  }, [period, boardType]);
+
+  const fetchUsers = useCallback(async () => {
+    const since = getSince();
 
     let filteredUserIds: string[] | null = null;
     if (scope !== 'all') {
@@ -90,8 +129,17 @@ export default function LeaderboardScreen({ navigation }: any) {
     setData(sorted.slice(0, 50));
   }, [period, scope, boardType]);
 
-  useEffect(() => { fetchLeaderboard(); }, [fetchLeaderboard]);
-  const onRefresh = async () => { setRefreshing(true); await fetchLeaderboard(); setRefreshing(false); };
+  useEffect(() => {
+    if (viewMode === 'totals') fetchTotals();
+    else fetchUsers();
+  }, [viewMode, fetchTotals, fetchUsers]);
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    if (viewMode === 'totals') await fetchTotals();
+    else await fetchUsers();
+    setRefreshing(false);
+  };
 
   const medals = ['🥇', '🥈', '🥉'];
   const scopeOptions = boardType === 'campus' ? activeCampuses : activeCities;
@@ -111,6 +159,18 @@ export default function LeaderboardScreen({ navigation }: any) {
         ))}
       </View>
 
+      {/* View mode: Rankings vs Individual Users */}
+      <View style={[s.toggleRow, { backgroundColor: colors.surface }]}>
+        <TouchableOpacity style={[s.toggleBtn, viewMode === 'totals' && { backgroundColor: colors.neonGreen }]} onPress={() => setViewMode('totals')}>
+          <Text style={[s.toggleText, { color: colors.textMuted }, viewMode === 'totals' && { color: colors.bg }]}>
+            {boardType === 'campus' ? '🏫 Campus Rankings' : '🏙️ City Rankings'}
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={[s.toggleBtn, viewMode === 'users' && { backgroundColor: colors.neonGreen }]} onPress={() => setViewMode('users')}>
+          <Text style={[s.toggleText, { color: colors.textMuted }, viewMode === 'users' && { color: colors.bg }]}>👤 Top Users</Text>
+        </TouchableOpacity>
+      </View>
+
       {/* Period toggle */}
       <View style={[s.toggleRow, { backgroundColor: colors.surface }]}>
         {(['week', 'month', 'year'] as Period[]).map(p => (
@@ -120,39 +180,65 @@ export default function LeaderboardScreen({ navigation }: any) {
         ))}
       </View>
 
-      {/* Scope chips */}
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginHorizontal: 16, marginBottom: 8 }}>
-        <TouchableOpacity style={[s.cityChip, scope === 'all' && { backgroundColor: colors.electricBlue }]} onPress={() => setScope('all')}>
-          <Text style={[s.toggleText, { color: colors.textMuted }, scope === 'all' && { color: '#fff' }]}>All</Text>
-        </TouchableOpacity>
-        {scopeOptions.map(c => (
-          <TouchableOpacity key={c} style={[s.cityChip, scope === c && { backgroundColor: colors.electricBlue }]} onPress={() => setScope(c)}>
-            <Text style={[s.toggleText, { color: colors.textMuted }, scope === c && { color: '#fff' }]} numberOfLines={1}>{c}</Text>
+      {/* Scope chips (users mode only) */}
+      {viewMode === 'users' && (
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginHorizontal: 16, marginBottom: 8 }}>
+          <TouchableOpacity style={[s.cityChip, scope === 'all' && { backgroundColor: colors.electricBlue }]} onPress={() => setScope('all')}>
+            <Text style={[s.toggleText, { color: colors.textMuted }, scope === 'all' && { color: '#fff' }]}>All</Text>
           </TouchableOpacity>
-        ))}
-      </ScrollView>
+          {scopeOptions.map(c => (
+            <TouchableOpacity key={c} style={[s.cityChip, scope === c && { backgroundColor: colors.electricBlue }]} onPress={() => setScope(c)}>
+              <Text style={[s.toggleText, { color: colors.textMuted }, scope === c && { color: '#fff' }]} numberOfLines={1}>{c}</Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+      )}
 
-      <FlatList
-        data={data}
-        keyExtractor={item => item.user_id}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.neonGreen} />}
-        renderItem={({ item }) => (
-          <TouchableOpacity
-            style={[s.row, { backgroundColor: colors.card, borderColor: colors.cardBorder }]}
-            onPress={() => navigation?.navigate('UserProfile', { userId: item.user_id })}
-            activeOpacity={0.7}
-          >
-            <Text style={s.rank}>{item.rank <= 3 ? medals[item.rank - 1] : `#${item.rank}`}</Text>
-            <View style={[s.avatar, { backgroundColor: colors.electricBlue }]}>
-              <Text style={[s.avatarText, { color: colors.bg }]}>{item.username[0]?.toUpperCase()}</Text>
+      {/* Totals ranking */}
+      {viewMode === 'totals' ? (
+        <FlatList
+          data={totals}
+          keyExtractor={item => item.name}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.neonGreen} />}
+          renderItem={({ item }) => (
+            <View style={[s.row, { backgroundColor: colors.card, borderColor: colors.cardBorder }]}>
+              <Text style={s.rank}>{item.rank <= 3 ? medals[item.rank - 1] : `#${item.rank}`}</Text>
+              <View style={{ flex: 1 }}>
+                <Text style={[s.username, { color: colors.text }]}>{item.name}</Text>
+                <Text style={{ color: colors.textMuted, fontSize: 11 }}>{item.userCount} {item.userCount === 1 ? 'person' : 'people'}</Text>
+              </View>
+              <View style={{ alignItems: 'flex-end' }}>
+                <Text style={[s.count, { color: colors.neonGreen }]}>{item.count}</Text>
+                <Text style={{ color: colors.textMuted, fontSize: 10 }}>drinks</Text>
+              </View>
             </View>
-            <Text style={[s.username, { color: colors.text }]}>{item.username}</Text>
-            <Text style={[s.count, { color: colors.neonGreen }]}>{item.count}</Text>
-          </TouchableOpacity>
-        )}
-        contentContainerStyle={{ paddingBottom: 100 }}
-        ListEmptyComponent={<Text style={[s.empty, { color: colors.textMuted }]}>No posts yet for this period</Text>}
-      />
+          )}
+          contentContainerStyle={{ paddingBottom: 100 }}
+          ListEmptyComponent={<Text style={[s.empty, { color: colors.textMuted }]}>No data yet for this period</Text>}
+        />
+      ) : (
+        <FlatList
+          data={data}
+          keyExtractor={item => item.user_id}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.neonGreen} />}
+          renderItem={({ item }) => (
+            <TouchableOpacity
+              style={[s.row, { backgroundColor: colors.card, borderColor: colors.cardBorder }]}
+              onPress={() => navigation?.navigate('UserProfile', { userId: item.user_id })}
+              activeOpacity={0.7}
+            >
+              <Text style={s.rank}>{item.rank <= 3 ? medals[item.rank - 1] : `#${item.rank}`}</Text>
+              <View style={[s.avatar, { backgroundColor: colors.electricBlue }]}>
+                <Text style={[s.avatarText, { color: colors.bg }]}>{item.username[0]?.toUpperCase()}</Text>
+              </View>
+              <Text style={[s.username, { color: colors.text }]}>{item.username}</Text>
+              <Text style={[s.count, { color: colors.neonGreen }]}>{item.count}</Text>
+            </TouchableOpacity>
+          )}
+          contentContainerStyle={{ paddingBottom: 100 }}
+          ListEmptyComponent={<Text style={[s.empty, { color: colors.textMuted }]}>No posts yet for this period</Text>}
+        />
+      )}
     </View>
   );
 }
