@@ -1,4 +1,4 @@
-export type DrinkCategory = 'protein_shake' | 'energy_drink' | 'coffee' | 'pre_workout' | 'powder' | 'other';
+export type DrinkCategory = 'protein_shake' | 'energy_drink' | 'coffee' | 'pre_workout' | 'supplements' | 'electrolytes' | 'other';
 
 export type DrinkProduct = {
   name: string;
@@ -13,11 +13,12 @@ export type DrinkBrand = {
 };
 
 export const DRINK_CATEGORIES: { key: DrinkCategory; label: string; emoji: string }[] = [
-  { key: 'protein_shake', label: 'Protein', emoji: '💪' },
+  { key: 'protein_shake', label: 'Protein Shakes', emoji: '💪' },
   { key: 'energy_drink', label: 'Energy', emoji: '⚡' },
   { key: 'coffee', label: 'Coffee', emoji: '☕' },
   { key: 'pre_workout', label: 'Pre-Workout', emoji: '🔥' },
-  { key: 'powder', label: 'Powder', emoji: '🥛' },
+  { key: 'supplements', label: 'Supplements', emoji: '🥛' },
+  { key: 'electrolytes', label: 'Electrolytes', emoji: '💧' },
   { key: 'other', label: 'Other', emoji: '🥤' },
 ];
 
@@ -251,26 +252,26 @@ export const DRINK_BRANDS: DrinkBrand[] = [
   },
   // ── Powder: Protein Powder ──
   {
-    name: 'Optimum Nutrition', category: 'powder', products: [
+    name: 'Optimum Nutrition', category: 'supplements', products: [
       { name: 'Gold Standard 100% Whey', flavors: ['Double Rich Chocolate', 'Vanilla Ice Cream', 'Extreme Milk Chocolate', 'Strawberry Banana', 'Mocha Cappuccino', 'Banana Cream', 'Cookies & Cream', 'Delicious Strawberry', 'Chocolate Peanut Butter', 'French Vanilla', 'White Chocolate', 'Chocolate Malt', 'Chocolate Mint', 'Coffee', 'Rocky Road', 'Salted Caramel'] },
       { name: 'Gold Standard Casein', flavors: ['Chocolate Supreme', 'Creamy Vanilla', 'Strawberry Smoothie', 'Chocolate Peanut Butter'] },
       { name: 'Gold Standard Plant', flavors: ['Chocolate', 'Vanilla', 'Berry'] },
     ],
   },
   {
-    name: 'Dymatize', category: 'powder', products: [
+    name: 'Dymatize', category: 'supplements', products: [
       { name: 'ISO100', flavors: ['Gourmet Chocolate', 'Fudge Brownie', 'Vanilla', 'Strawberry', 'Cookies & Cream', 'Peanut Butter', 'Birthday Cake', 'Chocolate Peanut Butter', 'Dunks Cinnamon Cereal', 'Fruity Pebbles', 'Cocoa Pebbles'] },
       { name: 'Elite 100% Whey', flavors: ['Rich Chocolate', 'Vanilla Cupcake', 'Cookies & Cream'] },
     ],
   },
   {
-    name: 'Ghost', category: 'powder', products: [
+    name: 'Ghost', category: 'supplements', products: [
       { name: 'Ghost Whey', flavors: ['Chips Ahoy!', 'Nutter Butter', 'Oreo', 'Cereal Milk', 'Peanut Butter Cereal Milk', 'Coffee Ice Cream', 'Fruity Cereal Milk', 'Chocolate Chip Cookie', 'Marshmallow Cereal Milk'] },
       { name: 'Ghost Vegan', flavors: ['Peanut Butter Cereal Milk', 'Chocolate Cereal Milk', 'Banana Pancake Batter'] },
     ],
   },
   {
-    name: 'Transparent Labs', category: 'powder', products: [
+    name: 'Transparent Labs', category: 'supplements', products: [
       { name: '100% Grass-Fed Whey', flavors: ['Chocolate Peanut Butter', 'Mocha', 'Vanilla Peanut Butter', 'Cinnamon French Toast', 'Milk Chocolate', 'French Vanilla', 'Strawberry'] },
       { name: 'Casein', flavors: ['Chocolate', 'Vanilla'] },
       { name: 'Plant Protein', flavors: ['Chocolate', 'Vanilla', 'Strawberry'] },
@@ -278,113 +279,139 @@ export const DRINK_BRANDS: DrinkBrand[] = [
     ],
   },
   {
-    name: 'Muscle Milk', category: 'powder', products: [
+    name: 'Muscle Milk', category: 'supplements', products: [
       { name: 'Genuine Protein Powder', flavors: ['Chocolate', 'Vanilla Creme', 'Strawberry', 'Cookies N Cream', 'Banana Cream'] },
       { name: '100% Whey', flavors: ['Chocolate', 'Vanilla'] },
     ],
   },
   {
-    name: 'MyProtein', category: 'powder', products: [
+    name: 'MyProtein', category: 'supplements', products: [
       { name: 'Impact Whey Protein', flavors: ['Chocolate Smooth', 'Vanilla', 'Strawberry Cream', 'Natural Chocolate', 'Cookies & Cream', 'Mocha', 'Salted Caramel', 'Chocolate Brownie', 'Blueberry', 'Banana', 'Unflavored'] },
       { name: 'Impact Whey Isolate', flavors: ['Chocolate Smooth', 'Vanilla', 'Strawberry Cream', 'Salted Caramel', 'Natural Chocolate'] },
       { name: 'Clear Whey Isolate', flavors: ['Peach Tea', 'Lemonade', 'Orange Mango', 'Bitter Lemon', 'Mojito', 'Rainbow Candy'] },
     ],
   },
   {
-    name: 'Orgain', category: 'powder', products: [
+    name: 'Orgain', category: 'supplements', products: [
       { name: 'Organic Protein', flavors: ['Chocolate Fudge', 'Vanilla Bean', 'Peanut Butter', 'Creamy Chocolate Fudge', 'Natural Unsweetened'] },
       { name: 'Sport Protein', flavors: ['Chocolate', 'Vanilla'] },
     ],
   },
   {
-    name: 'Naked Nutrition', category: 'powder', products: [
+    name: 'Naked Nutrition', category: 'supplements', products: [
       { name: 'Naked Whey', flavors: ['Unflavored', 'Chocolate', 'Vanilla', 'Strawberry'] },
       { name: 'Naked Casein', flavors: ['Unflavored', 'Chocolate'] },
       { name: 'Naked Pea', flavors: ['Unflavored', 'Chocolate'] },
     ],
   },
   {
-    name: 'Garden of Life', category: 'powder', products: [
+    name: 'Garden of Life', category: 'supplements', products: [
       { name: 'Organic Plant Protein', flavors: ['Chocolate', 'Vanilla', 'Vanilla Chai', 'Unflavored'] },
       { name: 'Sport Plant Protein', flavors: ['Chocolate', 'Vanilla'] },
     ],
   },
   {
-    name: 'Premier Protein', category: 'powder', products: [
+    name: 'Premier Protein', category: 'supplements', products: [
       { name: 'Protein Powder', flavors: ['Chocolate Milkshake', 'Vanilla Milkshake', 'Cafe Latte'] },
     ],
   },
   {
-    name: 'Isopure', category: 'powder', products: [
+    name: 'Isopure', category: 'supplements', products: [
       { name: 'Zero Carb Protein', flavors: ['Creamy Vanilla', 'Dutch Chocolate', 'Cookies & Cream', 'Strawberries & Cream', 'Banana Cream', 'Unflavored'] },
       { name: 'Infusions', flavors: ['Tropical Punch', 'Mixed Berry', 'Mango Lime', 'Citrus Lemonade'] },
     ],
   },
   // ── Powder: Collagen ──
   {
-    name: 'Vital Proteins', category: 'powder', products: [
+    name: 'Vital Proteins', category: 'supplements', products: [
       { name: 'Collagen Peptides', flavors: ['Unflavored', 'Vanilla', 'Chocolate', 'Mixed Berry', 'Lemon'] },
       { name: 'Marine Collagen', flavors: ['Unflavored', 'Strawberry Lemon', 'Peach'] },
       { name: 'Beauty Collagen', flavors: ['Strawberry Lemon', 'Lavender Lemon', 'Melon Mint', 'Tropical Hibiscus'] },
     ],
   },
   {
-    name: 'Sports Research', category: 'powder', products: [
+    name: 'Sports Research', category: 'supplements', products: [
       { name: 'Collagen Peptides', flavors: ['Unflavored', 'Chocolate', 'Vanilla', 'Mixed Berry'] },
     ],
   },
   {
-    name: 'Ancient Nutrition', category: 'powder', products: [
+    name: 'Ancient Nutrition', category: 'supplements', products: [
       { name: 'Multi Collagen Protein', flavors: ['Unflavored', 'Vanilla', 'Chocolate', 'Strawberry Lemonade', 'Cold Brew'] },
       { name: 'Collagen Peptides', flavors: ['Unflavored', 'Vanilla', 'Chocolate'] },
     ],
   },
   {
-    name: 'Further Food', category: 'powder', products: [
+    name: 'Further Food', category: 'supplements', products: [
       { name: 'Collagen Peptides', flavors: ['Unflavored', 'Chocolate', 'Vanilla'] },
     ],
   },
   // ── Powder: Creatine ──
   {
-    name: 'Thorne', category: 'powder', products: [
+    name: 'Thorne', category: 'supplements', products: [
       { name: 'Creatine Monohydrate', flavors: ['Unflavored'] },
     ],
   },
   {
-    name: 'Nutricost', category: 'powder', products: [
+    name: 'Nutricost', category: 'supplements', products: [
       { name: 'Creatine Monohydrate', flavors: ['Unflavored', 'Blue Raspberry', 'Fruit Punch', 'Watermelon', 'Green Apple'] },
     ],
   },
   {
-    name: 'Momentous', category: 'powder', products: [
+    name: 'Momentous', category: 'supplements', products: [
       { name: 'Creatine Monohydrate', flavors: ['Unflavored'] },
     ],
   },
   // ── Powder: Greens ──
   {
-    name: 'AG1 (Athletic Greens)', category: 'powder', products: [
+    name: 'AG1 (Athletic Greens)', category: 'supplements', products: [
       { name: 'AG1', flavors: ['Original'] },
     ],
   },
   {
-    name: 'Bloom', category: 'powder', products: [
+    name: 'Bloom', category: 'supplements', products: [
       { name: 'Greens & Superfoods', flavors: ['Berry', 'Coconut', 'Mango', 'Original', 'Mixed Berry', 'Citrus'] },
     ],
   },
   {
-    name: 'Amazing Grass', category: 'powder', products: [
+    name: 'Amazing Grass', category: 'supplements', products: [
       { name: 'Green Superfood', flavors: ['Original', 'Berry', 'Chocolate', 'Lemon Lime', 'Watermelon', 'Tropical'] },
       { name: 'Protein Superfood', flavors: ['Chocolate Peanut Butter', 'Vanilla', 'Rich Chocolate'] },
     ],
   },
   {
-    name: 'Nested Naturals', category: 'powder', products: [
+    name: 'Nested Naturals', category: 'supplements', products: [
       { name: 'Super Greens', flavors: ['Original', 'Berry'] },
     ],
   },
+  // ── Electrolytes ──
   {
-    name: 'LMNT', category: 'powder', products: [
+    name: 'LMNT', category: 'electrolytes', products: [
       { name: 'Electrolyte Mix', flavors: ['Citrus Salt', 'Raspberry Salt', 'Orange Salt', 'Watermelon Salt', 'Mango Chili', 'Chocolate Salt', 'Raw Unflavored'] },
+    ],
+  },
+  {
+    name: 'Liquid IV', category: 'electrolytes', products: [
+      { name: 'Hydration Multiplier', flavors: ['Lemon Lime', 'Passion Fruit', 'Acai Berry', 'Watermelon', 'Strawberry', 'Tropical Punch', 'Guava', 'Concord Grape', 'Golden Cherry', 'Piña Colada'] },
+      { name: 'Hydration + Energy', flavors: ['Yuzu Pineapple', 'Lemon Ginger', 'Tangerine'] },
+      { name: 'Sugar-Free', flavors: ['Lemon Lime', 'White Peach', 'Green Grape', 'Raspberry Melon'] },
+    ],
+  },
+  {
+    name: 'Nuun', category: 'electrolytes', products: [
+      { name: 'Sport', flavors: ['Lemon Lime', 'Tri-Berry', 'Orange', 'Citrus Fruit', 'Grape', 'Watermelon', 'Fruit Punch', 'Mango Orange', 'Cherry Limeade'] },
+      { name: 'Sport Caffeine', flavors: ['Fresh Lime', 'Mango Orange', 'Wild Berry', 'Cherry Limeade'] },
+      { name: 'Immunity', flavors: ['Orange Citrus', 'Blueberry Tangerine', 'Ginger Lemon Lime'] },
+    ],
+  },
+  {
+    name: 'Drip Drop', category: 'electrolytes', products: [
+      { name: 'ORS', flavors: ['Lemon', 'Berry', 'Watermelon', 'Orange', 'Fruit Punch', 'Concord Grape', 'Zero Sugar Lemon'] },
+    ],
+  },
+  {
+    name: 'Pedialyte', category: 'electrolytes', products: [
+      { name: 'Sport', flavors: ['Lemon Lime', 'Fruit Punch', 'Orange'] },
+      { name: 'Powder Packs', flavors: ['Grape', 'Fruit Punch', 'Orange Breeze', 'Strawberry Lemonade'] },
     ],
   },
 ];

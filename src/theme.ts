@@ -21,10 +21,11 @@ export const fonts = {
 
 export const drinkTypeLabels: Record<string, string> = {
   energy_drink: '⚡ Energy Drink',
-  protein_shake: '💪 Protein Shake',
+  protein_shake: '💪 Protein Shakes',
   coffee: '☕ Coffee',
   pre_workout: '🔥 Pre-Workout',
-  powder: '🥛 Powder',
+  supplements: '🥛 Supplements',
+  electrolytes: '💧 Electrolytes',
   other: '🥤 Other',
 };
 
@@ -33,6 +34,7 @@ export const drinkTypeEmoji: Record<string, string> = {
   protein_shake: '💪',
   coffee: '☕',
   pre_workout: '🔥',
-  powder: '🥛',
+  supplements: '🥛',
+  electrolytes: '💧',
   other: '🥤',
 };
