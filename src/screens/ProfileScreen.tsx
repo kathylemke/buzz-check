@@ -22,6 +22,32 @@ export default function ProfileScreen() {
   const [editMode, setEditMode] = useState(false);
   const [campusInput, setCampusInput] = useState('');
   const [campusSuggestions, setCampusSuggestions] = useState<string[]>([]);
+  const [newUsername, setNewUsername] = useState('');
+  const [newDisplayName, setNewDisplayName] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [editMsg, setEditMsg] = useState('');
+
+  const saveUsername = async () => {
+    if (!user || !newUsername.trim()) return;
+    const { data: existing } = await supabase.from('bc_users').select('id').eq('username', newUsername.trim()).neq('id', user.id).single();
+    if (existing) { setEditMsg('Username taken'); return; }
+    await supabase.from('bc_users').update({ username: newUsername.trim(), display_name: newDisplayName.trim() || newUsername.trim() }).eq('id', user.id);
+    setProfile((p: any) => p ? { ...p, username: newUsername.trim(), display_name: newDisplayName.trim() || newUsername.trim() } : p);
+    setEditMsg('✓ Saved');
+  };
+
+  const savePassword = async () => {
+    if (!user || !newPassword || newPassword.length < 4) { setEditMsg('Password must be 4+ chars'); return; }
+    // Hash using same method as AuthContext
+    const encoder = new TextEncoder();
+    const data = encoder.encode(newPassword);
+    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+    await supabase.from('bc_users').update({ password_hash: hashHex }).eq('id', user.id);
+    setNewPassword('');
+    setEditMsg('✓ Password updated');
+  };
 
   const ALL_CAMPUSES = Object.keys(CAMPUS_TO_CITY).sort();
 
@@ -142,12 +168,53 @@ export default function ProfileScreen() {
             {profile?.campus && <Text style={{ color: colors.textMuted, fontSize: fonts.sizes.sm, marginTop: 4 }}>🎓 {profile.campus}</Text>}
             {profile?.city && <Text style={{ color: colors.electricBlue, fontSize: fonts.sizes.xs, marginTop: 2 }}>📍 {profile.city}</Text>}
 
-            <TouchableOpacity onPress={() => { setEditMode(!editMode); setCampusInput(profile?.campus || ''); }} style={{ marginTop: 8 }}>
+            <TouchableOpacity onPress={() => { setEditMode(!editMode); setCampusInput(profile?.campus || ''); setNewUsername(profile?.username || ''); setNewDisplayName(profile?.display_name || ''); setNewPassword(''); setEditMsg(''); }} style={{ marginTop: 8 }}>
               <Text style={{ color: colors.electricBlue, fontSize: fonts.sizes.xs, fontWeight: '600' }}>{editMode ? 'Done' : '✏️ Edit Profile'}</Text>
             </TouchableOpacity>
 
             {editMode && (
               <View style={{ width: '100%', marginTop: 12, backgroundColor: colors.card, borderRadius: 12, padding: 16, borderWidth: 1, borderColor: colors.cardBorder }}>
+                {editMsg ? <Text style={{ color: colors.neonGreen, fontSize: 12, marginBottom: 8, textAlign: 'center' }}>{editMsg}</Text> : null}
+
+                <Text style={{ color: colors.textMuted, fontSize: 11, fontWeight: '700', marginBottom: 6, textTransform: 'uppercase' }}>Username</Text>
+                <View style={{ flexDirection: 'row', gap: 8, marginBottom: 12 }}>
+                  <TextInput
+                    style={{ flex: 1, backgroundColor: colors.inputBg, borderWidth: 1, borderColor: colors.inputBorder, borderRadius: 8, padding: 12, fontSize: fonts.sizes.sm, color: colors.text }}
+                    value={newUsername}
+                    onChangeText={setNewUsername}
+                    autoCapitalize="none"
+                    placeholder="Username"
+                    placeholderTextColor={colors.textMuted}
+                  />
+                  <TouchableOpacity onPress={saveUsername} style={{ backgroundColor: colors.neonGreen, borderRadius: 8, paddingHorizontal: 16, justifyContent: 'center' }}>
+                    <Text style={{ color: colors.bg, fontWeight: '700', fontSize: 12 }}>Save</Text>
+                  </TouchableOpacity>
+                </View>
+
+                <Text style={{ color: colors.textMuted, fontSize: 11, fontWeight: '700', marginBottom: 6, textTransform: 'uppercase' }}>Display Name</Text>
+                <TextInput
+                  style={{ backgroundColor: colors.inputBg, borderWidth: 1, borderColor: colors.inputBorder, borderRadius: 8, padding: 12, fontSize: fonts.sizes.sm, color: colors.text, marginBottom: 12 }}
+                  value={newDisplayName}
+                  onChangeText={setNewDisplayName}
+                  placeholder="Display name"
+                  placeholderTextColor={colors.textMuted}
+                />
+
+                <Text style={{ color: colors.textMuted, fontSize: 11, fontWeight: '700', marginBottom: 6, textTransform: 'uppercase' }}>New Password</Text>
+                <View style={{ flexDirection: 'row', gap: 8, marginBottom: 16 }}>
+                  <TextInput
+                    style={{ flex: 1, backgroundColor: colors.inputBg, borderWidth: 1, borderColor: colors.inputBorder, borderRadius: 8, padding: 12, fontSize: fonts.sizes.sm, color: colors.text }}
+                    value={newPassword}
+                    onChangeText={setNewPassword}
+                    secureTextEntry
+                    placeholder="New password"
+                    placeholderTextColor={colors.textMuted}
+                  />
+                  <TouchableOpacity onPress={savePassword} style={{ backgroundColor: colors.electricBlue, borderRadius: 8, paddingHorizontal: 16, justifyContent: 'center' }}>
+                    <Text style={{ color: colors.bg, fontWeight: '700', fontSize: 12 }}>Update</Text>
+                  </TouchableOpacity>
+                </View>
+
                 <Text style={{ color: colors.textMuted, fontSize: 11, fontWeight: '700', marginBottom: 6, textTransform: 'uppercase' }}>University</Text>
                 <TextInput
                   style={{ backgroundColor: colors.inputBg, borderWidth: 1, borderColor: colors.inputBorder, borderRadius: 8, padding: 12, fontSize: fonts.sizes.sm, color: colors.text }}
