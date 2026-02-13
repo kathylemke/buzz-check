@@ -237,6 +237,16 @@ export const DRINK_BRANDS: DrinkBrand[] = [
     ],
   },
 
+  {
+    name: '7 Brew', category: 'coffee', products: [
+      { name: 'Chiller', flavors: ['Caramel', 'Vanilla', 'Mocha', 'White Chocolate', 'Strawberry', 'Coconut', 'Peach', 'Lavender'] },
+      { name: 'Iced Coffee', flavors: ['Original', 'Vanilla', 'Caramel', 'Mocha', 'White Chocolate', 'Hazelnut'] },
+      { name: 'Hot Coffee', flavors: ['Original', 'Vanilla', 'Caramel', 'Mocha', 'White Chocolate', 'Hazelnut'] },
+      { name: 'Energy Infusion', flavors: ['Strawberry', 'Peach', 'Blue Raspberry', 'Mango', 'Watermelon'] },
+      { name: 'Smoothie', flavors: ['Strawberry Banana', 'Mango', 'Mixed Berry'] },
+    ],
+  },
+
   // ── Pre-Workout ──
   {
     name: 'C4 Pre-Workout', category: 'pre_workout', products: [
