@@ -111,6 +111,16 @@ export const DRINK_BRANDS: DrinkBrand[] = [
 
   // ── Energy Drinks ──
   {
+    name: 'Starbucks', category: 'energy_drink', products: [
+      { name: 'Refreshers', flavors: ['Strawberry Açaí', 'Mango Dragonfruit', 'Pink Drink', 'Paradise Drink', 'Dragon Drink', 'Strawberry Açaí Lemonade', 'Mango Dragonfruit Lemonade', 'Pineapple Passionfruit', 'Pineapple Passionfruit Lemonade'] },
+    ],
+  },
+  {
+    name: 'Dunkin', category: 'energy_drink', products: [
+      { name: 'Refreshers', flavors: ['Strawberry Dragonfruit', 'Peach Passion Fruit', 'Mango Pineapple', 'Blue Raspberry'] },
+    ],
+  },
+  {
     name: 'Monster', category: 'energy_drink', products: [
       { name: 'Original', flavors: ['Original', 'Lo-Carb', 'Assault', 'Import'] },
       { name: 'Ultra', flavors: ['Ultra White', 'Ultra Rosa', 'Ultra Sunrise', 'Ultra Blue', 'Ultra Paradise', 'Ultra Gold', 'Ultra Violet', 'Ultra Watermelon', 'Ultra Peachy Keen'] },
@@ -199,7 +209,6 @@ export const DRINK_BRANDS: DrinkBrand[] = [
       { name: 'Cold Brew', flavors: ['Cold Brew', 'Vanilla Sweet Cream Cold Brew', 'Salted Caramel Cream Cold Brew', 'Pumpkin Cream Cold Brew', 'Chocolate Cream Cold Brew', 'Cold Brew with Milk', 'Nitro Cold Brew', 'Nitro Vanilla Sweet Cream'] },
       { name: 'Iced Matcha', flavors: ['Iced Matcha Latte', 'Iced Matcha Lemonade'] },
       { name: 'Frappuccino', flavors: ['Caramel', 'Mocha', 'Java Chip', 'Vanilla Bean', 'Strawberry', 'Caramel Ribbon Crunch', 'Mocha Cookie Crumble', 'White Chocolate Mocha', 'Pumpkin Spice', 'Double Chocolaty Chip', 'Matcha'] },
-      { name: 'Refreshers', flavors: ['Strawberry Açaí', 'Mango Dragonfruit', 'Pink Drink', 'Paradise Drink', 'Dragon Drink', 'Strawberry Açaí Lemonade', 'Mango Dragonfruit Lemonade', 'Pineapple Passionfruit', 'Pineapple Passionfruit Lemonade'] },
       { name: 'Bottled & Canned', flavors: ['Frappuccino Mocha', 'Frappuccino Vanilla', 'Frappuccino Caramel', 'Doubleshot Espresso', 'Doubleshot Vanilla', 'Doubleshot Mocha', 'Tripleshot Dark Caramel', 'Tripleshot French Vanilla'] },
     ],
   },
@@ -221,7 +230,6 @@ export const DRINK_BRANDS: DrinkBrand[] = [
       { name: 'Iced Matcha', flavors: ['Iced Matcha Latte', 'Blueberry Matcha Latte'] },
       { name: 'Iced Chai', flavors: ['Iced Chai', 'Iced Vanilla Chai'] },
       { name: 'Frozen Coffee', flavors: ['Frozen Coffee', 'Frozen Vanilla', 'Frozen Caramel', 'Frozen Mocha', 'Frozen Matcha Latte'] },
-      { name: 'Refreshers', flavors: ['Strawberry Dragonfruit', 'Peach Passion Fruit', 'Mango Pineapple', 'Blue Raspberry'] },
       { name: 'Coolattas', flavors: ['Cosmic Coolatta', 'Blue Raspberry Coolatta', 'Strawberry Coolatta'] },
     ],
   },
