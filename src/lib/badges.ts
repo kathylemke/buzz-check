@@ -8,6 +8,8 @@ export const BADGE_DEFS: BadgeDef[] = [
   { type: 'first_post', name: 'First Protein', desc: 'First protein shake post', emoji: '💪' },
   { type: 'first_post', name: 'First Coffee', desc: 'First coffee post', emoji: '☕' },
   { type: 'first_post', name: 'First Pre-Workout', desc: 'First pre-workout post', emoji: '🔥' },
+  { type: 'first_post', name: 'First Supplements', desc: 'First supplements post', emoji: '🥛' },
+  { type: 'first_post', name: 'First Electrolytes', desc: 'First electrolytes post', emoji: '💧' },
   { type: 'first_post', name: 'First Other', desc: 'First other drink post', emoji: '🥤' },
   // Milestones
   { type: 'brand_explorer', name: 'Brand Explorer', desc: '5 different brands in a category', emoji: '🧭' },
@@ -27,6 +29,8 @@ const typeToFirstBadge: Record<string, string> = {
   protein_shake: 'First Protein',
   coffee: 'First Coffee',
   pre_workout: 'First Pre-Workout',
+  supplements: 'First Supplements',
+  electrolytes: 'First Electrolytes',
   other: 'First Other',
 };
 
@@ -36,10 +40,13 @@ export async function checkAndAwardBadges(userId: string) {
 
   const award = async (type: string, name: string) => {
     if (has(type, name)) return;
+    // Double-check in DB to avoid duplicates
+    const { data: check } = await supabase.from('bc_badges').select('id').eq('user_id', userId).eq('badge_type', type).eq('badge_name', name).limit(1);
+    if (check && check.length > 0) return;
     const def = BADGE_DEFS.find(d => d.type === type && d.name === name);
-    await supabase.from('bc_badges').upsert({
+    await supabase.from('bc_badges').insert({
       user_id: userId, badge_type: type, badge_name: name, badge_desc: def?.desc || '',
-    }, { onConflict: 'user_id,badge_type,badge_name' });
+    });
   };
 
   // Fetch user's posts
