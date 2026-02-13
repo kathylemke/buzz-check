@@ -27,6 +27,7 @@ export default function NewPostScreen({ navigation }: any) {
   const [isPrivate, setIsPrivate] = useState(false);
   const [city, setCity] = useState<string>('');
   const [brandSearch, setBrandSearch] = useState('');
+  const [productSearch, setProductSearch] = useState('');
 
   useEffect(() => {
     if (user) {
@@ -39,7 +40,7 @@ export default function NewPostScreen({ navigation }: any) {
 
   const reset = () => {
     setStep('category'); setCategory(null); setBrand(null); setProduct(null);
-    setFlavor(''); setCustomFlavor(''); setCaption(''); setImageUri(null); setRating(0); setIsPrivate(false); setBrandSearch('');
+    setFlavor(''); setCustomFlavor(''); setCaption(''); setImageUri(null); setRating(0); setIsPrivate(false); setBrandSearch(''); setProductSearch('');
   };
 
   const pickImage = async () => {
@@ -51,7 +52,7 @@ export default function NewPostScreen({ navigation }: any) {
   const drinkName = product && finalFlavor ? `${product} - ${finalFlavor}` : product || brand || '';
 
   const handlePost = async () => {
-    if (!brand) { if (Platform.OS === 'web') window.alert('Pick a brand first'); else alert('Pick a brand first'); return; }
+    if (!brand) { if (Platform.OS === 'web') window.alert('Pick a company first'); else alert('Pick a company first'); return; }
     setPosting(true);
     try {
       let photo_url = null;
@@ -159,11 +160,11 @@ export default function NewPostScreen({ navigation }: any) {
     return (
       <ScrollView style={s.container} contentContainerStyle={s.content}>
         {renderBack()}
-        <Text style={s.title}>{DRINK_CATEGORIES.find(c => c.key === category)?.emoji} Pick Brand</Text>
+        <Text style={s.title}>{DRINK_CATEGORIES.find(c => c.key === category)?.emoji} Pick Company</Text>
         {renderStepIndicator()}
         <View style={{ gap: 2 }}>
           {brands.map(b => (
-            <TouchableOpacity key={b.name} style={s.listItem} onPress={() => { setBrand(b.name); setStep('product'); }}>
+            <TouchableOpacity key={b.name} style={s.listItem} onPress={() => { setBrand(b.name); setProductSearch(''); setStep('product'); }}>
               <Text style={{ color: colors.text, fontSize: fonts.sizes.md, fontWeight: '600' }}>{b.name}</Text>
               <Text style={{ color: colors.textMuted, fontSize: 22 }}>›</Text>
             </TouchableOpacity>
@@ -179,19 +180,31 @@ export default function NewPostScreen({ navigation }: any) {
 
   if (step === 'product') {
     const products = brand ? getBrandProducts(brand) : [];
+    const q = productSearch.toLowerCase();
+    const filtered = q ? products.filter(p => p.name.toLowerCase().includes(q) || p.flavors.some(f => f.toLowerCase().includes(q))) : products;
     return (
       <ScrollView style={s.container} contentContainerStyle={s.content}>
         {renderBack()}
         <Text style={s.title}>{brand}</Text>
         {renderStepIndicator()}
-        <Text style={s.stepLabel}>Pick a product line</Text>
+        {products.length > 5 && (
+          <TextInput
+            style={[s.input, { marginBottom: 12 }]}
+            placeholder="🔍 Search drinks..."
+            placeholderTextColor={colors.textMuted}
+            value={productSearch}
+            onChangeText={setProductSearch}
+          />
+        )}
+        <Text style={s.stepLabel}>Pick a drink</Text>
         <View style={{ gap: 2 }}>
-          {products.map(p => (
+          {filtered.map(p => (
             <TouchableOpacity key={p.name} style={s.listItem} onPress={() => { setProduct(p.name); setStep('flavor'); }}>
               <Text style={{ color: colors.text, fontSize: fonts.sizes.md, fontWeight: '600' }}>{p.name}</Text>
               <Text style={{ color: colors.textMuted, fontSize: 22 }}>›</Text>
             </TouchableOpacity>
           ))}
+          {filtered.length === 0 && <Text style={{ color: colors.textMuted, textAlign: 'center', marginVertical: 20 }}>No drinks found</Text>}
         </View>
       </ScrollView>
     );
