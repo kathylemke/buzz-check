@@ -98,7 +98,10 @@ export function cityFromCampus(campus: string): string | null {
   return null;
 }
 
-// Get unique cities for leaderboard filtering
+// Get unique cities for leaderboard filtering — only cities that have mapped universities
 export function getAllCities(): string[] {
   return [...new Set(Object.values(CAMPUS_TO_CITY))].sort();
 }
+
+// Featured cities always shown in leaderboard even if no users yet
+export const FEATURED_CITIES = ['San Francisco, CA', 'Chicago, IL', 'Washington, DC'];

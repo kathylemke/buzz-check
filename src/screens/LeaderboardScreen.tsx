@@ -3,7 +3,7 @@ import { View, Text, FlatList, TouchableOpacity, StyleSheet, RefreshControl, Scr
 import { useTheme } from '../contexts/ThemeContext';
 import { fonts } from '../theme';
 import { supabase } from '../lib/supabase';
-import { getAllCities } from '../data/cities';
+import { getAllCities, FEATURED_CITIES } from '../data/cities';
 
 type Period = 'week' | 'month' | 'year';
 type Scope = 'all' | string;
@@ -14,7 +14,20 @@ export default function LeaderboardScreen() {
   const [period, setPeriod] = useState<Period>('week');
   const [scope, setScope] = useState<Scope>('all');
   const [data, setData] = useState<LeaderEntry[]>([]);
+  const [activeCities, setActiveCities] = useState<string[]>(FEATURED_CITIES);
   const [refreshing, setRefreshing] = useState(false);
+
+  // Fetch cities that actually have users
+  useEffect(() => {
+    (async () => {
+      const { data: users } = await supabase.from('bc_users').select('city');
+      if (users) {
+        const userCities = [...new Set(users.map((u: any) => u.city).filter(Boolean))] as string[];
+        const merged = [...new Set([...FEATURED_CITIES, ...userCities])].sort();
+        setActiveCities(merged);
+      }
+    })();
+  }, []);
 
   const fetchLeaderboard = useCallback(async () => {
     const now = new Date();
@@ -78,7 +91,7 @@ export default function LeaderboardScreen() {
         <TouchableOpacity style={[s.cityChip, scope === 'all' && { backgroundColor: colors.electricBlue }]} onPress={() => setScope('all')}>
           <Text style={[s.toggleText, { color: colors.textMuted }, scope === 'all' && { color: colors.bg }]}>All Cities</Text>
         </TouchableOpacity>
-        {getAllCities().map(c => (
+        {activeCities.map(c => (
           <TouchableOpacity key={c} style={[s.cityChip, scope === c && { backgroundColor: colors.electricBlue }]} onPress={() => setScope(c)}>
             <Text style={[s.toggleText, { color: colors.textMuted }, scope === c && { color: colors.bg }]} numberOfLines={1}>{c}</Text>
           </TouchableOpacity>

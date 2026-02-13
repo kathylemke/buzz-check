@@ -1,11 +1,11 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { View, Text, FlatList, Image, StyleSheet, TouchableOpacity, RefreshControl, Modal, ScrollView, Dimensions } from 'react-native';
+import { View, Text, FlatList, Image, StyleSheet, TouchableOpacity, RefreshControl, Modal, ScrollView, Dimensions, TextInput } from 'react-native';
 import { useTheme } from '../contexts/ThemeContext';
 import { fonts, drinkTypeEmoji, drinkTypeLabels } from '../theme';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { getUserBadges, BADGE_DEFS } from '../lib/badges';
-import { getAllCities } from '../data/cities';
+import { CAMPUS_TO_CITY, cityFromCampus } from '../data/cities';
 
 type Post = { id: string; drink_name: string; drink_type: string; brand: string | null; photo_url: string | null; created_at: string };
 type Badge = { badge_type: string; badge_name: string; badge_desc: string; earned_at: string };
@@ -19,6 +19,27 @@ export default function ProfileScreen() {
   const [stats, setStats] = useState({ today: 0, week: 0, allTime: 0 });
   const [refreshing, setRefreshing] = useState(false);
   const [breakdown, setBreakdown] = useState<any>(null);
+  const [editMode, setEditMode] = useState(false);
+  const [campusInput, setCampusInput] = useState('');
+  const [campusSuggestions, setCampusSuggestions] = useState<string[]>([]);
+
+  const ALL_CAMPUSES = Object.keys(CAMPUS_TO_CITY).sort();
+
+  const onCampusType = (text: string) => {
+    setCampusInput(text);
+    if (text.length < 2) { setCampusSuggestions([]); return; }
+    const lower = text.toLowerCase();
+    setCampusSuggestions(ALL_CAMPUSES.filter(c => c.toLowerCase().includes(lower)).slice(0, 5));
+  };
+
+  const pickCampus = async (c: string) => {
+    if (!user) return;
+    const city = cityFromCampus(c) || null;
+    await supabase.from('bc_users').update({ campus: c, city }).eq('id', user.id);
+    setProfile((p: any) => p ? { ...p, campus: c, city } : p);
+    setCampusInput(c);
+    setCampusSuggestions([]);
+  };
 
   const fetchData = useCallback(async () => {
     if (!user) return;
@@ -120,6 +141,34 @@ export default function ProfileScreen() {
             <Text style={{ color: colors.textSecondary, fontSize: fonts.sizes.md, marginTop: 2 }}>@{profile?.username}</Text>
             {profile?.campus && <Text style={{ color: colors.textMuted, fontSize: fonts.sizes.sm, marginTop: 4 }}>🎓 {profile.campus}</Text>}
             {profile?.city && <Text style={{ color: colors.electricBlue, fontSize: fonts.sizes.xs, marginTop: 2 }}>📍 {profile.city}</Text>}
+
+            <TouchableOpacity onPress={() => { setEditMode(!editMode); setCampusInput(profile?.campus || ''); }} style={{ marginTop: 8 }}>
+              <Text style={{ color: colors.electricBlue, fontSize: fonts.sizes.xs, fontWeight: '600' }}>{editMode ? 'Done' : '✏️ Edit Profile'}</Text>
+            </TouchableOpacity>
+
+            {editMode && (
+              <View style={{ width: '100%', marginTop: 12, backgroundColor: colors.card, borderRadius: 12, padding: 16, borderWidth: 1, borderColor: colors.cardBorder }}>
+                <Text style={{ color: colors.textMuted, fontSize: 11, fontWeight: '700', marginBottom: 6, textTransform: 'uppercase' }}>University</Text>
+                <TextInput
+                  style={{ backgroundColor: colors.inputBg, borderWidth: 1, borderColor: colors.inputBorder, borderRadius: 8, padding: 12, fontSize: fonts.sizes.sm, color: colors.text }}
+                  placeholder="Search university..."
+                  placeholderTextColor={colors.textMuted}
+                  value={campusInput}
+                  onChangeText={onCampusType}
+                  autoCapitalize="words"
+                />
+                {campusSuggestions.length > 0 && (
+                  <View style={{ backgroundColor: colors.surface, borderRadius: 8, marginTop: 4, borderWidth: 1, borderColor: colors.cardBorder }}>
+                    {campusSuggestions.map(c => (
+                      <TouchableOpacity key={c} onPress={() => pickCampus(c)} style={{ padding: 10, borderBottomWidth: 1, borderBottomColor: colors.cardBorder }}>
+                        <Text style={{ color: colors.text, fontSize: fonts.sizes.sm }}>{c}</Text>
+                        <Text style={{ color: colors.textMuted, fontSize: 11 }}>{CAMPUS_TO_CITY[c]}</Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                )}
+              </View>
+            )}
 
             <View style={{ flexDirection: 'row', marginTop: 20, gap: 16 }}>
               <StatBox label="Today" value={stats.today} period="today" />
