@@ -245,6 +245,16 @@ export const DRINK_BRANDS: DrinkBrand[] = [
       { name: 'Smoothie', flavors: ['Strawberry Banana', 'Mango', 'Mixed Berry'] },
     ],
   },
+  {
+    name: 'Panera', category: 'coffee', products: [
+      { name: 'Hot Coffee', flavors: ['Light Roast', 'Dark Roast', 'Hazelnut', 'Decaf'] },
+      { name: 'Iced Coffee', flavors: ['Regular', 'Vanilla', 'Caramel', 'Mocha'] },
+      { name: 'Latte', flavors: ['Vanilla', 'Caramel', 'Mocha', 'Hazelnut'] },
+      { name: 'Frozen Cold Brew', flavors: ['Chocolate', 'Caramel', 'Vanilla'] },
+      { name: 'Charged Lemonade', flavors: ['Strawberry Lemon Mint', 'Fuji Apple Cranberry', 'Mango Yuzu Citrus'] },
+      { name: 'Hot Tea', flavors: ['English Breakfast', 'Green', 'Chai', 'Mint'] },
+    ],
+  },
   // 7 Brew energy under energy_drink category
   {
     name: '7 Brew', category: 'energy_drink', products: [
