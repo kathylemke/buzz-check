@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { View, Text, FlatList, Image, StyleSheet, TouchableOpacity, RefreshControl, Modal, ScrollView, Dimensions, TextInput } from 'react-native';
+import { View, Text, FlatList, Image, StyleSheet, TouchableOpacity, RefreshControl, Modal, ScrollView, Dimensions, TextInput, Platform } from 'react-native';
 import { useTheme } from '../contexts/ThemeContext';
 import { fonts, drinkTypeEmoji, drinkTypeLabels } from '../theme';
 import { supabase } from '../lib/supabase';
@@ -322,7 +322,22 @@ export default function ProfileScreen() {
               </View>
             </View>
 
-            <TouchableOpacity style={{ marginTop: 20, paddingVertical: 8, paddingHorizontal: 20 }} onPress={signOut}>
+            <TouchableOpacity style={{ marginTop: 20, backgroundColor: colors.electricBlue, borderRadius: 12, paddingVertical: 12, paddingHorizontal: 24 }} onPress={async () => {
+              const link = 'https://kathylemke.github.io/buzz-check';
+              if (Platform.OS === 'web' && navigator.clipboard) {
+                await navigator.clipboard.writeText(link);
+                setEditMsg('🔗 Link copied!');
+              } else {
+                try {
+                  const { Share } = require('react-native');
+                  await Share.share({ message: `Join me on Buzz Check! ⚡ ${link}` });
+                } catch { setEditMsg(link); }
+              }
+            }}>
+              <Text style={{ color: '#fff', fontSize: fonts.sizes.sm, fontWeight: '700', textAlign: 'center' }}>🔗 Invite Friends</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity style={{ marginTop: 12, paddingVertical: 8, paddingHorizontal: 20 }} onPress={signOut}>
               <Text style={{ color: colors.danger, fontSize: fonts.sizes.sm, fontWeight: '600' }}>Sign Out</Text>
             </TouchableOpacity>
           </View>
