@@ -297,7 +297,7 @@ export default function ProfileScreen({ route, navigation }: any) {
             {memberSince && <Text style={{ color: colors.textMuted, fontSize: fonts.sizes.xs, marginTop: 6 }}>Member since {memberSince}</Text>}
 
             {/* Following / Followers */}
-            <View style={{ flexDirection: 'row', marginTop: 12, gap: 24 }}>
+            <View style={{ flexDirection: 'row', marginTop: 12, gap: 24, alignItems: 'center' }}>
               <TouchableOpacity onPress={() => navigation.navigate('Friends')} style={{ alignItems: 'center' }}>
                 <Text style={{ color: colors.text, fontSize: fonts.sizes.lg, fontWeight: '800' }}>{followingCount}</Text>
                 <Text style={{ color: colors.textSecondary, fontSize: fonts.sizes.xs }}>Following</Text>
@@ -306,6 +306,27 @@ export default function ProfileScreen({ route, navigation }: any) {
                 <Text style={{ color: colors.text, fontSize: fonts.sizes.lg, fontWeight: '800' }}>{followersCount}</Text>
                 <Text style={{ color: colors.textSecondary, fontSize: fonts.sizes.xs }}>Followers</Text>
               </TouchableOpacity>
+              {isOwnProfile && (
+                <TouchableOpacity
+                  onPress={async () => {
+                    const msg = 'Check out Buzz Check! Track your drinks and compete with friends 🏆 https://kathylemke.github.io/buzz-check';
+                    if (Platform.OS === 'web' && navigator.share) {
+                      try { await navigator.share({ text: msg }); } catch {}
+                    } else if (Platform.OS === 'web' && navigator.clipboard) {
+                      await navigator.clipboard.writeText(msg);
+                      setEditMsg('📋 Copied invite link!');
+                    } else {
+                      try {
+                        const { Share } = require('react-native');
+                        await Share.share({ message: msg });
+                      } catch {}
+                    }
+                  }}
+                  style={{ backgroundColor: colors.electricBlue, borderRadius: 20, width: 36, height: 36, justifyContent: 'center', alignItems: 'center' }}
+                >
+                  <Text style={{ fontSize: 18 }}>📤</Text>
+                </TouchableOpacity>
+              )}
             </View>
 
             {/* Follow button for other profiles */}
@@ -528,26 +549,9 @@ export default function ProfileScreen({ route, navigation }: any) {
             </View>
 
             {isOwnProfile && (
-              <>
-                <TouchableOpacity style={{ marginTop: 20, backgroundColor: colors.electricBlue, borderRadius: 12, paddingVertical: 12, paddingHorizontal: 24 }} onPress={async () => {
-                  const link = 'https://kathylemke.github.io/buzz-check';
-                  if (Platform.OS === 'web' && navigator.clipboard) {
-                    await navigator.clipboard.writeText(link);
-                    setEditMsg('🔗 Link copied!');
-                  } else {
-                    try {
-                      const { Share } = require('react-native');
-                      await Share.share({ message: `Join me on L.I.D! 🥤 ${link}` });
-                    } catch { setEditMsg(link); }
-                  }
-                }}>
-                  <Text style={{ color: '#fff', fontSize: fonts.sizes.sm, fontWeight: '700', textAlign: 'center' }}>🔗 Invite Friends</Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity style={{ marginTop: 12, paddingVertical: 8, paddingHorizontal: 20 }} onPress={signOut}>
-                  <Text style={{ color: colors.danger, fontSize: fonts.sizes.sm, fontWeight: '600' }}>Sign Out</Text>
-                </TouchableOpacity>
-              </>
+              <TouchableOpacity style={{ marginTop: 20, paddingVertical: 8, paddingHorizontal: 20 }} onPress={signOut}>
+                <Text style={{ color: colors.danger, fontSize: fonts.sizes.sm, fontWeight: '600' }}>Sign Out</Text>
+              </TouchableOpacity>
             )}
           </View>
         }
