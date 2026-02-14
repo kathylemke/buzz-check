@@ -21,6 +21,50 @@ export const CAMPUS_TO_CITY: Record<string, string> = {
 };
 
 // Lat/lng for each city (for map pins)
+// Abbreviations for map pins
+export const CAMPUS_ABBREV: Record<string, string> = {
+  'Boston College': 'BC',
+  'Clemson': 'CLEM',
+  'Duke': 'DUKE',
+  'Florida State': 'FSU',
+  'FSU': 'FSU',
+  'Georgia Tech': 'GT',
+  'Louisville': 'LOU',
+  'Miami': 'MIA',
+  'NC State': 'NCSU',
+  'Notre Dame': 'ND',
+  'Pitt': 'PITT',
+  'Syracuse': 'SYR',
+  'Virginia Tech': 'VT',
+  'VT': 'VT',
+  'Wake Forest': 'WAKE',
+  'Cal': 'CAL',
+  'SMU': 'SMU',
+  'Stanford': 'STAN',
+};
+
+export const CITY_ABBREV: Record<string, string> = {
+  'Chestnut Hill, MA': 'CHL',
+  'Clemson, SC': 'CLM',
+  'Durham, NC': 'DUR',
+  'Tallahassee, FL': 'TLH',
+  'Atlanta, GA': 'ATL',
+  'Louisville, KY': 'LOU',
+  'Coral Gables, FL': 'CG',
+  'Raleigh, NC': 'RAL',
+  'South Bend, IN': 'SB',
+  'Pittsburgh, PA': 'PIT',
+  'Syracuse, NY': 'SYR',
+  'Blacksburg, VA': 'BLK',
+  'Winston-Salem, NC': 'WS',
+  'Berkeley, CA': 'BRK',
+  'Dallas, TX': 'DAL',
+  'Stanford, CA': 'STN',
+  'San Francisco, CA': 'SF',
+  'Chicago, IL': 'CHI',
+  'Washington, DC': 'DC',
+};
+
 export const CITY_COORDINATES: Record<string, { lat: number; lng: number }> = {
   'Chestnut Hill, MA': { lat: 42.3355, lng: -71.1685 },
   'Clemson, SC': { lat: 34.6834, lng: -82.8374 },
