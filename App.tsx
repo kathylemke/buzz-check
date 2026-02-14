@@ -14,6 +14,7 @@ import NewPostScreen from './src/screens/NewPostScreen';
 import ProfileScreen from './src/screens/ProfileScreen';
 import FriendsScreen from './src/screens/FriendsScreen';
 import LeaderboardScreen from './src/screens/LeaderboardScreen';
+import MapScreen from './src/screens/MapScreen';
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -34,6 +35,7 @@ function AppTabs() {
       <Tab.Screen name="Friends" component={FriendsScreen} options={{ tabBarIcon: ({ color }) => <Text style={{ fontSize: 22, color }}>👥</Text> }} />
       <Tab.Screen name="Post" component={NewPostScreen} options={{ tabBarIcon: ({ color }) => <Text style={{ fontSize: 22, color }}>➕</Text> }} />
       <Tab.Screen name="Board" component={LeaderboardScreen} options={{ tabBarIcon: ({ color }) => <Text style={{ fontSize: 22, color }}>🏆</Text> }} />
+      <Tab.Screen name="Map" component={MapScreen} options={{ tabBarIcon: ({ color }) => <Text style={{ fontSize: 22, color }}>🗺️</Text> }} />
       <Tab.Screen name="Profile" component={ProfileScreen} options={{ tabBarIcon: ({ color }) => <Text style={{ fontSize: 22, color }}>👤</Text> }} />
     </Tab.Navigator>
   );
