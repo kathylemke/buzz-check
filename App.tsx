@@ -59,10 +59,8 @@ function AppTabs() {
       }}
     >
       <Tab.Screen name="Feed" component={FeedScreen} options={{ tabBarIcon: ({ color }) => <Text style={{ fontSize: 22, color }}>⚡</Text> }} />
-      <Tab.Screen name="Friends" component={FriendsScreen} options={{ tabBarIcon: ({ color }) => <Text style={{ fontSize: 22, color }}>👥</Text> }} />
       <Tab.Screen name="Post" component={NewPostScreen} options={{ tabBarIcon: ({ color }) => <Text style={{ fontSize: 22, color }}>➕</Text> }} />
       <Tab.Screen name="Board" component={LeaderboardScreen} options={{ tabBarIcon: ({ color }) => <Text style={{ fontSize: 22, color }}>🏆</Text> }} />
-      <Tab.Screen name="Alerts" component={NotificationsScreen} options={{ tabBarIcon: ({ color }) => <NotifBell color={color} userId={user?.id} /> }} />
       <Tab.Screen name="Map" component={MapScreen} options={{ tabBarIcon: ({ color }) => <Text style={{ fontSize: 22, color }}>🗺️</Text> }} />
       <Tab.Screen name="Profile" component={ProfileScreen} options={{ tabBarIcon: ({ color }) => <Text style={{ fontSize: 22, color }}>👤</Text> }} />
     </Tab.Navigator>
@@ -91,6 +89,8 @@ function Main() {
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen name="MainTabs" component={AppTabs} />
       <Stack.Screen name="UserProfile" component={ProfileScreen} />
+      <Stack.Screen name="Friends" component={FriendsScreen} />
+      <Stack.Screen name="Notifications" component={NotificationsScreen} />
     </Stack.Navigator>
   );
 }

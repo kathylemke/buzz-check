@@ -7,7 +7,7 @@ import { useAuth } from '../contexts/AuthContext';
 
 type UserRow = { id: string; username: string; display_name: string | null; avatar_url: string | null };
 
-export default function FriendsScreen() {
+export default function FriendsScreen({ navigation }: any) {
   const { user } = useAuth();
   const { colors } = useTheme();
   const [search, setSearch] = useState('');
@@ -82,7 +82,14 @@ export default function FriendsScreen() {
         renderItem={null}
         ListHeaderComponent={
           <>
-            <Text style={{ fontSize: fonts.sizes.xl, fontWeight: '800', color: colors.neonGreen, padding: 16, paddingTop: 60 }}>👥 Friends</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', padding: 16, paddingTop: 60 }}>
+              {navigation.canGoBack() && (
+                <TouchableOpacity onPress={() => navigation.goBack()} style={{ marginRight: 12 }}>
+                  <Text style={{ color: colors.electricBlue, fontSize: fonts.sizes.md, fontWeight: '600' }}>← Back</Text>
+                </TouchableOpacity>
+              )}
+              <Text style={{ fontSize: fonts.sizes.xl, fontWeight: '800', color: colors.neonGreen }}>👥 Friends</Text>
+            </View>
             <TextInput
               style={{ backgroundColor: colors.inputBg, borderWidth: 1, borderColor: colors.inputBorder, borderRadius: 12, color: colors.text, fontSize: fonts.sizes.md, padding: 14, marginHorizontal: 16, marginBottom: 12 }}
               placeholder="Search by username..." placeholderTextColor={colors.textMuted} value={search} onChangeText={setSearch} autoCapitalize="none" autoCorrect={false}

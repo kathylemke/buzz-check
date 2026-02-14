@@ -7,6 +7,7 @@ import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { getUserBadges, BADGE_DEFS } from '../lib/badges';
 import { CAMPUS_TO_CITY, cityFromCampus, getSelectableCities } from '../data/cities';
+import { getUnreadCount } from '../lib/notifications';
 
 type Post = { id: string; drink_name: string; drink_type: string; brand: string | null; photo_url: string | null; created_at: string };
 type Badge = { badge_type: string; badge_name: string; metadata?: { desc?: string; emoji?: string }; earned_at: string };
@@ -35,6 +36,9 @@ export default function ProfileScreen({ route, navigation }: any) {
   const [editMsg, setEditMsg] = useState('');
   const [topDrinksByConsumption, setTopDrinksByConsumption] = useState<{name: string; count: number}[]>([]);
   const [followStatus, setFollowStatus] = useState<'none' | 'pending' | 'accepted'>('none');
+  const [followingCount, setFollowingCount] = useState(0);
+  const [followersCount, setFollowersCount] = useState(0);
+  const [unreadAlerts, setUnreadAlerts] = useState(0);
 
   const targetUserId = viewingUserId || user?.id;
 
@@ -166,6 +170,20 @@ export default function ProfileScreen({ route, navigation }: any) {
       const { data: f } = await supabase.from('bc_follows').select('status').eq('follower_id', user.id).eq('following_id', viewingUserId).single();
       setFollowStatus(f?.status || 'none');
     }
+
+    // Fetch follow counts
+    const [{ count: fgCount }, { count: frCount }] = await Promise.all([
+      supabase.from('bc_follows').select('*', { count: 'exact', head: true }).eq('follower_id', targetUserId),
+      supabase.from('bc_follows').select('*', { count: 'exact', head: true }).eq('following_id', targetUserId),
+    ]);
+    setFollowingCount(fgCount ?? 0);
+    setFollowersCount(frCount ?? 0);
+
+    // Unread alerts (own profile)
+    if (isOwnProfile && user) {
+      const c = await getUnreadCount(user.id);
+      setUnreadAlerts(c);
+    }
   }, [targetUserId, user, isOwnProfile, viewingUserId]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
@@ -234,11 +252,21 @@ export default function ProfileScreen({ route, navigation }: any) {
               </TouchableOpacity>
             )}
 
-            {/* Theme toggle (own profile only) */}
+            {/* Theme toggle + alerts (own profile only) */}
             {isOwnProfile && (
-              <TouchableOpacity onPress={toggle} style={{ position: 'absolute', top: 60, right: 16 }}>
-                <Text style={{ fontSize: 24 }}>{mode === 'dark' ? '☀️' : '🌙'}</Text>
-              </TouchableOpacity>
+              <View style={{ position: 'absolute', top: 60, right: 16, flexDirection: 'row', alignItems: 'center', gap: 16 }}>
+                <TouchableOpacity onPress={() => navigation.navigate('Notifications')}>
+                  <Text style={{ fontSize: 24 }}>🔔</Text>
+                  {unreadAlerts > 0 && (
+                    <View style={{ position: 'absolute', top: -4, right: -8, backgroundColor: colors.danger, borderRadius: 8, minWidth: 16, height: 16, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 3 }}>
+                      <Text style={{ color: '#fff', fontSize: 10, fontWeight: '800' }}>{unreadAlerts > 99 ? '99+' : unreadAlerts}</Text>
+                    </View>
+                  )}
+                </TouchableOpacity>
+                <TouchableOpacity onPress={toggle}>
+                  <Text style={{ fontSize: 24 }}>{mode === 'dark' ? '☀️' : '🌙'}</Text>
+                </TouchableOpacity>
+              </View>
             )}
 
             {/* Avatar */}
@@ -265,6 +293,18 @@ export default function ProfileScreen({ route, navigation }: any) {
 
             {/* Member since */}
             {memberSince && <Text style={{ color: colors.textMuted, fontSize: fonts.sizes.xs, marginTop: 6 }}>Member since {memberSince}</Text>}
+
+            {/* Following / Followers */}
+            <View style={{ flexDirection: 'row', marginTop: 12, gap: 24 }}>
+              <TouchableOpacity onPress={() => navigation.navigate('Friends')} style={{ alignItems: 'center' }}>
+                <Text style={{ color: colors.text, fontSize: fonts.sizes.lg, fontWeight: '800' }}>{followingCount}</Text>
+                <Text style={{ color: colors.textSecondary, fontSize: fonts.sizes.xs }}>Following</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => navigation.navigate('Friends')} style={{ alignItems: 'center' }}>
+                <Text style={{ color: colors.text, fontSize: fonts.sizes.lg, fontWeight: '800' }}>{followersCount}</Text>
+                <Text style={{ color: colors.textSecondary, fontSize: fonts.sizes.xs }}>Followers</Text>
+              </TouchableOpacity>
+            </View>
 
             {/* Follow button for other profiles */}
             {!isOwnProfile && (
