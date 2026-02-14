@@ -6,7 +6,6 @@ import { fonts, drinkTypeEmoji, drinkTypeLabels } from '../theme';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { getUserBadges, BADGE_DEFS } from '../lib/badges';
-import BadgeIcon from '../components/BadgeIcon';
 import { CAMPUS_TO_CITY, cityFromCampus, getSelectableCities } from '../data/cities';
 import { getUnreadCount } from '../lib/notifications';
 
@@ -544,7 +543,7 @@ export default function ProfileScreen({ route, navigation }: any) {
                       const isEarned = badges.some(eb => eb.badge_type === bType && eb.badge_name === bName);
                       return (
                         <View key={i} style={{ flex: 1, backgroundColor: isEarned ? colors.card : colors.surface, borderRadius: 12, padding: 10, alignItems: 'center', borderWidth: 1, borderColor: isEarned ? colors.cardBorder : 'transparent', opacity: isEarned ? 1 : 0.7 }}>
-                          <BadgeIcon badgeName={bName} size={36} locked={!isEarned} />
+                          <Text style={{ fontSize: 28 }}>{BADGE_DEFS.find(d => d.name === bName)?.emoji || "🏅"}</Text>
                           <Text style={{ color: isEarned ? colors.text : colors.textMuted, fontSize: 10, fontWeight: '700', textAlign: 'center', marginTop: 4 }} numberOfLines={2}>{bName}</Text>
                         </View>
                       );
@@ -577,7 +576,7 @@ export default function ProfileScreen({ route, navigation }: any) {
                       const def = BADGE_DEFS.find(d => d.type === b.badge_type && d.name === b.badge_name);
                       return (
                         <View key={i} style={{ backgroundColor: colors.card, borderRadius: 12, padding: 12, alignItems: 'center', width: 100, borderWidth: 1, borderColor: colors.cardBorder }}>
-                          <BadgeIcon badgeName={b.badge_name} size={40} locked={false} />
+                          <Text style={{ fontSize: 32 }}>{b.metadata?.emoji || BADGE_DEFS.find(d => d.name === b.badge_name)?.emoji || "🏅"}</Text>
                           <Text style={{ color: colors.text, fontSize: 11, fontWeight: '700', textAlign: 'center', marginTop: 6 }} numberOfLines={2}>{b.badge_name}</Text>
                           <Text style={{ color: colors.textMuted, fontSize: 9, textAlign: 'center', marginTop: 2 }} numberOfLines={2}>{def?.desc || ''}</Text>
                         </View>
@@ -590,7 +589,7 @@ export default function ProfileScreen({ route, navigation }: any) {
               <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
                 {BADGE_DEFS.filter(d => !badges.some(b => b.badge_type === d.type && b.badge_name === d.name)).map((d, i) => (
                   <View key={i} style={{ backgroundColor: colors.surface, borderRadius: 12, padding: 12, alignItems: 'center', width: 100, opacity: 0.7 }}>
-                    <BadgeIcon badgeName={d.name} size={40} locked={true} />
+                    <Text style={{ fontSize: 32, opacity: 0.3 }}>{d.emoji || "🏅"}</Text>
                     <Text style={{ color: colors.textMuted, fontSize: 11, fontWeight: '700', textAlign: 'center', marginTop: 6 }} numberOfLines={2}>{d.name}</Text>
                     <Text style={{ color: colors.textMuted, fontSize: 9, textAlign: 'center', marginTop: 2 }} numberOfLines={2}>{d.desc}</Text>
                   </View>
