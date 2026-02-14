@@ -9,6 +9,7 @@ import { DRINK_CATEGORIES, getBrandsByCategory, getBrandProducts, getProductFlav
 import { cityFromCampus, getSelectableCities } from '../data/cities';
 import { checkAndAwardBadges } from '../lib/badges';
 import PostCelebration from '../components/PostCelebration';
+import { maybeSmackTalk } from '../lib/notifications';
 
 type Step = 'category' | 'brand' | 'product' | 'flavor' | 'details';
 type LocalStep = 'city' | 'place' | 'item' | 'details';
@@ -134,6 +135,7 @@ export default function NewPostScreen({ navigation }: any) {
       const { error } = await supabase.from('bc_posts').insert(postData);
       if (error) throw error;
       checkAndAwardBadges(user!.id).catch(() => {});
+      maybeSmackTalk(user!.id, user!.username).catch(() => {});
       setCelebrateCategory(postData.drink_type || 'other');
       setCelebrateDrink(drinkName);
       setCelebrating(true);
