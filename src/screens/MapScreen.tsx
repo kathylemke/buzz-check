@@ -14,7 +14,7 @@ type PinData = {
   drinks: { drink_name: string; username: string; created_at: string; rating: number | null }[];
 };
 
-type MapMode = 'campus' | 'city';
+type MapMode = 'campus';
 
 function WebMap({ pinData, onPinClick, colors }: { pinData: PinData[]; onPinClick: (pin: PinData) => void; colors: any }) {
   const mapRef = useRef<any>(null);
@@ -142,7 +142,7 @@ export default function MapScreen() {
   const [pinData, setPinData] = useState<PinData[]>([]);
   const [selectedPin, setSelectedPin] = useState<PinData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [mapMode, setMapMode] = useState<MapMode>('campus');
+  const mapMode: MapMode = 'campus';
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -228,16 +228,6 @@ export default function MapScreen() {
     <View style={[s.container, { backgroundColor: colors.bg }]}>
       <Text style={[s.title, { color: colors.neonGreen }]}>🗺️ L.I.D. Map</Text>
 
-      {/* Campus / City toggle */}
-      <View style={[s.toggleRow, { backgroundColor: colors.surface }]}>
-        {(['campus', 'city'] as MapMode[]).map(t => (
-          <TouchableOpacity key={t} style={[s.toggleBtn, mapMode === t && { backgroundColor: colors.electricBlue }]} onPress={() => setMapMode(t)}>
-            <Text style={[s.toggleText, { color: colors.textMuted }, mapMode === t && { color: '#fff' }]}>
-              {t === 'campus' ? '🎓 Campus' : '📍 City'}
-            </Text>
-          </TouchableOpacity>
-        ))}
-      </View>
 
       {loading ? (
         <Text style={{ color: colors.textMuted, textAlign: 'center', marginTop: 60 }}>Loading...</Text>
