@@ -5,6 +5,9 @@ import { fonts, drinkTypeEmoji } from '../theme';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 
+type SmackTalk = { _type: 'smack'; id: string; message: string; created_at: string; from_user_id: string };
+type FeedItem = (Post & { _type: 'post' }) | SmackTalk;
+
 type Comment = { id: string; text: string; photo_url: string | null; created_at: string; user: { username: string } };
 type Post = {
   id: string; user_id: string; drink_name: string; drink_type: string; caption: string; photo_url: string | null;
@@ -38,6 +41,7 @@ export default function FeedScreen({ navigation }: any) {
   const [refreshing, setRefreshing] = useState(false);
   const [feedMode, setFeedMode] = useState<'everyone' | 'following'>('everyone');
   const [followingIds, setFollowingIds] = useState<string[]>([]);
+  const [smackTalks, setSmackTalks] = useState<SmackTalk[]>([]);
   const [commentModal, setCommentModal] = useState<string | null>(null);
   const [comments, setComments] = useState<Comment[]>([]);
   const [newComment, setNewComment] = useState('');
@@ -78,6 +82,17 @@ export default function FeedScreen({ navigation }: any) {
       }));
       setPosts(enriched);
     } else setPosts([]);
+
+    // Fetch smack talk notifications for the current user
+    if (user) {
+      const { data: stData } = await supabase.from('bc_notifications')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('type', 'smack_talk')
+        .order('created_at', { ascending: false })
+        .limit(20);
+      setSmackTalks((stData ?? []).map((n: any) => ({ _type: 'smack' as const, id: n.id, message: n.message, created_at: n.created_at, from_user_id: n.from_user_id })));
+    }
   }, [user, feedMode, followingIds]);
 
   useEffect(() => { fetchPosts(); }, [fetchPosts]);
@@ -129,6 +144,38 @@ export default function FeedScreen({ navigation }: any) {
     await supabase.from('bc_likes').delete().eq('post_id', postId);
     await supabase.from('bc_posts').delete().eq('id', postId);
     fetchPosts();
+  };
+
+  // Merge posts + smack talk, sorted by time
+  const feedItems: FeedItem[] = React.useMemo(() => {
+    const postItems: FeedItem[] = posts.map(p => ({ ...p, _type: 'post' as const }));
+    const merged = [...postItems, ...smackTalks];
+    merged.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+    return merged;
+  }, [posts, smackTalks]);
+
+  const renderSmackTalk = (item: SmackTalk) => (
+    <View style={[ss.card, { backgroundColor: colors.card, borderColor: colors.danger, borderWidth: 2, marginHorizontal: 12, marginBottom: 12 }]}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
+        <Text style={{ fontSize: 20, marginRight: 8 }}>🔥</Text>
+        <Text style={{ color: colors.danger, fontWeight: '800', fontSize: fonts.sizes.sm, textTransform: 'uppercase', letterSpacing: 1 }}>Smack Talk</Text>
+      </View>
+      <Text style={{ color: colors.text, fontSize: fonts.sizes.md, fontWeight: '600', lineHeight: 22 }}>{item.message}</Text>
+      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 12 }}>
+        <Text style={{ color: colors.textMuted, fontSize: fonts.sizes.xs }}>{timeAgo(item.created_at)}</Text>
+        <TouchableOpacity
+          style={{ backgroundColor: colors.neonGreen, borderRadius: 8, paddingHorizontal: 14, paddingVertical: 8 }}
+          onPress={() => navigation.navigate('Post')}
+        >
+          <Text style={{ color: colors.bg, fontSize: fonts.sizes.sm, fontWeight: '800' }}>⚡ Post Now</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
+
+  const renderFeedItem = ({ item }: { item: FeedItem }) => {
+    if (item._type === 'smack') return renderSmackTalk(item);
+    return renderPost({ item });
   };
 
   const renderPost = ({ item }: { item: Post }) => (
@@ -183,9 +230,9 @@ export default function FeedScreen({ navigation }: any) {
         </TouchableOpacity>
       </View>
       <FlatList
-        data={posts}
-        keyExtractor={(item) => item.id}
-        renderItem={renderPost}
+        data={feedItems}
+        keyExtractor={(item) => `${item._type}-${item.id}`}
+        renderItem={renderFeedItem}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.neonGreen} />}
         contentContainerStyle={{ paddingBottom: 100 }}
         ListEmptyComponent={<Text style={[ss.empty, { color: colors.textMuted }]}>No posts yet. Be the first! 🚀</Text>}
