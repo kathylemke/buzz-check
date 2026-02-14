@@ -5,11 +5,10 @@ import { fonts } from '../theme';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { FEATURED_CITIES } from '../data/cities';
+import { DRINK_CATEGORIES, DrinkCategory } from '../data/drinks';
 
 type Period = 'week' | 'month' | 'year';
 type BoardType = 'city' | 'campus';
-type ViewMode = 'users' | 'totals';
-type Scope = 'all' | string;
 type LeaderEntry = { user_id: string; username: string; count: number; rank: number };
 type TotalEntry = { name: string; count: number; rank: number; userCount: number };
 
@@ -18,40 +17,11 @@ export default function LeaderboardScreen({ navigation }: any) {
   const { user } = useAuth();
   const [period, setPeriod] = useState<Period>('week');
   const [boardType, setBoardType] = useState<BoardType>('campus');
-  const [viewMode, setViewMode] = useState<ViewMode>('totals');
-  const [scope, setScope] = useState<Scope>('all');
-  const [data, setData] = useState<LeaderEntry[]>([]);
+  const [categoryFilter, setCategoryFilter] = useState<DrinkCategory | null>(null);
   const [totals, setTotals] = useState<TotalEntry[]>([]);
-  const [activeCities, setActiveCities] = useState<string[]>(FEATURED_CITIES);
-  const [activeCampuses, setActiveCampuses] = useState<string[]>([]);
+  const [drilldown, setDrilldown] = useState<string | null>(null); // name of campus/city drilled into
+  const [drilldownUsers, setDrilldownUsers] = useState<LeaderEntry[]>([]);
   const [refreshing, setRefreshing] = useState(false);
-  const [myCity, setMyCity] = useState<string | null>(null);
-  const [myCampus, setMyCampus] = useState<string | null>(null);
-
-  useEffect(() => {
-    (async () => {
-      if (user) {
-        const { data: me } = await supabase.from('bc_users').select('city, campus').eq('id', user.id).single();
-        if (me?.city) setMyCity(me.city);
-        if (me?.campus) setMyCampus(me.campus);
-      }
-      const { data: users } = await supabase.from('bc_users').select('city, campus');
-      if (users) {
-        const userCities = [...new Set(users.map((u: any) => u.city).filter(Boolean))] as string[];
-        setActiveCities([...new Set([...FEATURED_CITIES, ...userCities])].sort());
-        const userCampuses = [...new Set(users.map((u: any) => u.campus).filter(Boolean))] as string[];
-        setActiveCampuses(userCampuses.sort());
-      }
-    })();
-  }, [user]);
-
-  useEffect(() => {
-    if (viewMode === 'users') {
-      if (boardType === 'campus' && myCampus) setScope(myCampus);
-      else if (boardType === 'city' && myCity) setScope(myCity);
-      else setScope('all');
-    }
-  }, [boardType, myCampus, myCity, viewMode]);
 
   const getSince = () => {
     const now = new Date();
@@ -63,18 +33,18 @@ export default function LeaderboardScreen({ navigation }: any) {
   const fetchTotals = useCallback(async () => {
     const since = getSince();
     const field = boardType === 'campus' ? 'campus' : 'city';
-    
-    // Get all users with their campus/city
+
     const { data: users } = await supabase.from('bc_users').select(`id, ${field}`);
     if (!users) { setTotals([]); return; }
-    
+
     const userToGroup: Record<string, string> = {};
     for (const u of users) {
       if ((u as any)[field]) userToGroup[u.id] = (u as any)[field];
     }
 
-    // Get posts in period
-    const { data: posts } = await supabase.from('bc_posts').select('user_id').gte('created_at', since);
+    let postQuery = supabase.from('bc_posts').select('user_id').gte('created_at', since);
+    if (categoryFilter) postQuery = postQuery.eq('drink_type', categoryFilter);
+    const { data: posts } = await postQuery;
     if (!posts) { setTotals([]); return; }
 
     const groupCounts: Record<string, { count: number; users: Set<string> }> = {};
@@ -92,30 +62,26 @@ export default function LeaderboardScreen({ navigation }: any) {
       .map((e, i) => ({ ...e, rank: i + 1 }));
 
     setTotals(sorted.slice(0, 50));
-  }, [period, boardType]);
+  }, [period, boardType, categoryFilter]);
 
-  const fetchUsers = useCallback(async () => {
+  const fetchDrilldownUsers = useCallback(async (locationName: string) => {
     const since = getSince();
+    const field = boardType === 'campus' ? 'campus' : 'city';
 
-    let filteredUserIds: string[] | null = null;
-    if (scope !== 'all') {
-      const field = boardType === 'campus' ? 'campus' : 'city';
-      const { data: scopeUsers } = await supabase.from('bc_users').select('id').eq(field, scope);
-      if (!scopeUsers || scopeUsers.length === 0) { setData([]); return; }
-      filteredUserIds = scopeUsers.map(u => u.id);
-    }
+    const { data: scopeUsers } = await supabase.from('bc_users').select('id').eq(field, locationName);
+    if (!scopeUsers || scopeUsers.length === 0) { setDrilldownUsers([]); return; }
+    const filteredUserIds = scopeUsers.map(u => u.id);
 
-    let query = supabase.from('bc_posts').select('user_id').gte('created_at', since);
-    if (filteredUserIds) query = query.in('user_id', filteredUserIds);
-
+    let query = supabase.from('bc_posts').select('user_id').gte('created_at', since).in('user_id', filteredUserIds);
+    if (categoryFilter) query = query.eq('drink_type', categoryFilter);
     const { data: posts } = await query;
-    if (!posts) { setData([]); return; }
+    if (!posts) { setDrilldownUsers([]); return; }
 
     const counts: Record<string, number> = {};
     for (const p of posts) counts[p.user_id] = (counts[p.user_id] || 0) + 1;
 
     const userIds = Object.keys(counts);
-    if (userIds.length === 0) { setData([]); return; }
+    if (userIds.length === 0) { setDrilldownUsers([]); return; }
 
     const { data: users } = await supabase.from('bc_users').select('id, username').in('id', userIds);
     const userMap: Record<string, string> = {};
@@ -126,23 +92,26 @@ export default function LeaderboardScreen({ navigation }: any) {
       .sort((a, b) => b.count - a.count)
       .map((e, i) => ({ ...e, rank: i + 1 }));
 
-    setData(sorted.slice(0, 50));
-  }, [period, scope, boardType]);
+    setDrilldownUsers(sorted.slice(0, 50));
+  }, [period, boardType, categoryFilter]);
 
   useEffect(() => {
-    if (viewMode === 'totals') fetchTotals();
-    else fetchUsers();
-  }, [viewMode, fetchTotals, fetchUsers]);
+    setDrilldown(null);
+    fetchTotals();
+  }, [fetchTotals]);
+
+  useEffect(() => {
+    if (drilldown) fetchDrilldownUsers(drilldown);
+  }, [drilldown, fetchDrilldownUsers]);
 
   const onRefresh = async () => {
     setRefreshing(true);
-    if (viewMode === 'totals') await fetchTotals();
-    else await fetchUsers();
+    if (drilldown) await fetchDrilldownUsers(drilldown);
+    else await fetchTotals();
     setRefreshing(false);
   };
 
   const medals = ['🥇', '🥈', '🥉'];
-  const scopeOptions = boardType === 'campus' ? activeCampuses : activeCities;
 
   return (
     <View style={[s.container, { backgroundColor: colors.bg }]}>
@@ -151,24 +120,12 @@ export default function LeaderboardScreen({ navigation }: any) {
       {/* Board type toggle: Campus vs City */}
       <View style={[s.toggleRow, { backgroundColor: colors.surface }]}>
         {(['campus', 'city'] as BoardType[]).map(t => (
-          <TouchableOpacity key={t} style={[s.toggleBtn, boardType === t && { backgroundColor: colors.electricBlue }]} onPress={() => setBoardType(t)}>
+          <TouchableOpacity key={t} style={[s.toggleBtn, boardType === t && { backgroundColor: colors.electricBlue }]} onPress={() => { setBoardType(t); setDrilldown(null); }}>
             <Text style={[s.toggleText, { color: colors.textMuted }, boardType === t && { color: '#fff' }]}>
               {t === 'campus' ? '🎓 Campus' : '📍 City'}
             </Text>
           </TouchableOpacity>
         ))}
-      </View>
-
-      {/* View mode: Rankings vs Individual Users */}
-      <View style={[s.toggleRow, { backgroundColor: colors.surface }]}>
-        <TouchableOpacity style={[s.toggleBtn, viewMode === 'totals' && { backgroundColor: colors.neonGreen }]} onPress={() => setViewMode('totals')}>
-          <Text style={[s.toggleText, { color: colors.textMuted }, viewMode === 'totals' && { color: colors.bg }]}>
-            {boardType === 'campus' ? '🏫 Campus Rankings' : '🏙️ City Rankings'}
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={[s.toggleBtn, viewMode === 'users' && { backgroundColor: colors.neonGreen }]} onPress={() => setViewMode('users')}>
-          <Text style={[s.toggleText, { color: colors.textMuted }, viewMode === 'users' && { color: colors.bg }]}>👤 Top Users</Text>
-        </TouchableOpacity>
       </View>
 
       {/* Period toggle */}
@@ -180,45 +137,73 @@ export default function LeaderboardScreen({ navigation }: any) {
         ))}
       </View>
 
-      {/* Scope chips (users mode only) */}
-      {viewMode === 'users' && (
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginHorizontal: 16, marginBottom: 8 }}>
-          <TouchableOpacity style={[s.cityChip, scope === 'all' && { backgroundColor: colors.electricBlue }]} onPress={() => setScope('all')}>
-            <Text style={[s.toggleText, { color: colors.textMuted }, scope === 'all' && { color: '#fff' }]}>All</Text>
+      {/* Drink category filter */}
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginHorizontal: 16, marginBottom: 8 }}>
+        <TouchableOpacity
+          style={[s.categoryChip, !categoryFilter && { backgroundColor: colors.electricBlue }]}
+          onPress={() => setCategoryFilter(null)}
+        >
+          <Text style={[s.toggleText, { color: colors.textMuted }, !categoryFilter && { color: '#fff' }]}>🍹 All</Text>
+        </TouchableOpacity>
+        {DRINK_CATEGORIES.map(cat => (
+          <TouchableOpacity
+            key={cat.key}
+            style={[s.categoryChip, categoryFilter === cat.key && { backgroundColor: colors.electricBlue }]}
+            onPress={() => setCategoryFilter(categoryFilter === cat.key ? null : cat.key)}
+          >
+            <Text style={[s.toggleText, { color: colors.textMuted }, categoryFilter === cat.key && { color: '#fff' }]} numberOfLines={1}>
+              {cat.emoji} {cat.label}
+            </Text>
           </TouchableOpacity>
-          {scopeOptions.map(c => (
-            <TouchableOpacity key={c} style={[s.cityChip, scope === c && { backgroundColor: colors.electricBlue }]} onPress={() => setScope(c)}>
-              <Text style={[s.toggleText, { color: colors.textMuted }, scope === c && { color: '#fff' }]} numberOfLines={1}>{c}</Text>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
+        ))}
+      </ScrollView>
+
+      {/* Drilldown back button */}
+      {drilldown && (
+        <TouchableOpacity style={[s.backBtn, { backgroundColor: colors.surface }]} onPress={() => setDrilldown(null)}>
+          <Text style={[s.backBtnText, { color: colors.electricBlue }]}>← Back to {boardType === 'campus' ? 'Campus' : 'City'} Rankings</Text>
+        </TouchableOpacity>
       )}
 
-      {/* Totals ranking */}
-      {viewMode === 'totals' ? (
+      {/* Drilldown header */}
+      {drilldown && (
+        <Text style={[s.drilldownTitle, { color: colors.text }]}>
+          👤 Top Users in {drilldown}
+        </Text>
+      )}
+
+      {/* Rankings or drilldown users */}
+      {!drilldown ? (
         <FlatList
           data={totals}
           keyExtractor={item => item.name}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.neonGreen} />}
           renderItem={({ item }) => (
-            <View style={[s.row, { backgroundColor: colors.card, borderColor: colors.cardBorder }]}>
+            <TouchableOpacity
+              style={[s.row, { backgroundColor: colors.card, borderColor: colors.cardBorder }]}
+              onPress={() => setDrilldown(item.name)}
+              activeOpacity={0.7}
+            >
               <Text style={s.rank}>{item.rank <= 3 ? medals[item.rank - 1] : `#${item.rank}`}</Text>
               <View style={{ flex: 1 }}>
                 <Text style={[s.username, { color: colors.text }]}>{item.name}</Text>
                 <Text style={{ color: colors.textMuted, fontSize: 11 }}>{item.userCount} {item.userCount === 1 ? 'person' : 'people'}</Text>
               </View>
-              <View style={{ alignItems: 'flex-end' }}>
-                <Text style={[s.count, { color: colors.neonGreen }]}>{item.count}</Text>
-                <Text style={{ color: colors.textMuted, fontSize: 10 }}>drinks</Text>
+              <View style={{ alignItems: 'flex-end', flexDirection: 'row', gap: 8 }}>
+                <View style={{ alignItems: 'flex-end' }}>
+                  <Text style={[s.count, { color: colors.neonGreen }]}>{item.count}</Text>
+                  <Text style={{ color: colors.textMuted, fontSize: 10 }}>drinks</Text>
+                </View>
+                <Text style={{ color: colors.textMuted, fontSize: 16 }}>›</Text>
               </View>
-            </View>
+            </TouchableOpacity>
           )}
           contentContainerStyle={{ paddingBottom: 100 }}
           ListEmptyComponent={<Text style={[s.empty, { color: colors.textMuted }]}>No data yet for this period</Text>}
         />
       ) : (
         <FlatList
-          data={data}
+          data={drilldownUsers}
           keyExtractor={item => item.user_id}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.neonGreen} />}
           renderItem={({ item }) => (
@@ -256,5 +241,8 @@ const s = StyleSheet.create({
   username: { flex: 1, fontWeight: '700', fontSize: fonts.sizes.md },
   count: { fontWeight: '900', fontSize: fonts.sizes.lg },
   empty: { textAlign: 'center', marginTop: 60, fontSize: fonts.sizes.md },
-  cityChip: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 16, marginRight: 6, backgroundColor: 'rgba(255,255,255,0.08)' },
+  categoryChip: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 16, marginRight: 6, backgroundColor: 'rgba(255,255,255,0.08)' },
+  backBtn: { marginHorizontal: 16, marginBottom: 8, paddingVertical: 10, paddingHorizontal: 14, borderRadius: 10 },
+  backBtnText: { fontWeight: '700', fontSize: fonts.sizes.sm },
+  drilldownTitle: { marginHorizontal: 16, marginBottom: 8, fontWeight: '800', fontSize: fonts.sizes.md },
 });
