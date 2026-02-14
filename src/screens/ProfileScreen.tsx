@@ -39,6 +39,8 @@ export default function ProfileScreen({ route, navigation }: any) {
   const [followingCount, setFollowingCount] = useState(0);
   const [followersCount, setFollowersCount] = useState(0);
   const [unreadAlerts, setUnreadAlerts] = useState(0);
+  const [statsTab, setStatsTab] = useState<'favorites' | 'consumed' | 'badges'>('favorites');
+  const [badgeModalVisible, setBadgeModalVisible] = useState(false);
 
   const targetUserId = viewingUserId || user?.id;
 
@@ -449,39 +451,6 @@ export default function ProfileScreen({ route, navigation }: any) {
               </View>
             )}
 
-            {/* Top 3 Drinks Section */}
-            {(userTopDrinks || topDrinksByConsumption.length > 0) && (
-              <View style={{ width: '100%', marginTop: 20 }}>
-                {userTopDrinks && (
-                  <>
-                    <Text style={{ color: colors.electricBlue, fontSize: fonts.sizes.sm, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 }}>⭐ Favorite Drinks</Text>
-                    <View style={{ flexDirection: 'row', gap: 8, marginBottom: 12 }}>
-                      {userTopDrinks.map((d: string, i: number) => (
-                        <View key={i} style={{ flex: 1, backgroundColor: colors.card, borderRadius: 12, padding: 12, alignItems: 'center', borderWidth: 1, borderColor: colors.cardBorder }}>
-                          <Text style={{ fontSize: 18, marginBottom: 4 }}>{['🥇', '🥈', '🥉'][i]}</Text>
-                          <Text style={{ color: colors.text, fontSize: 11, fontWeight: '600', textAlign: 'center' }} numberOfLines={2}>{d}</Text>
-                        </View>
-                      ))}
-                    </View>
-                  </>
-                )}
-                {topDrinksByConsumption.length > 0 && (
-                  <>
-                    <Text style={{ color: colors.electricBlue, fontSize: fonts.sizes.sm, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 }}>🔥 Most Consumed</Text>
-                    <View style={{ flexDirection: 'row', gap: 8 }}>
-                      {topDrinksByConsumption.map((d, i) => (
-                        <View key={i} style={{ flex: 1, backgroundColor: colors.card, borderRadius: 12, padding: 12, alignItems: 'center', borderWidth: 1, borderColor: colors.cardBorder }}>
-                          <Text style={{ fontSize: 18, marginBottom: 4 }}>{['🥇', '🥈', '🥉'][i]}</Text>
-                          <Text style={{ color: colors.text, fontSize: 11, fontWeight: '600', textAlign: 'center' }} numberOfLines={2}>{d.name}</Text>
-                          <Text style={{ color: colors.textMuted, fontSize: 10, marginTop: 2 }}>{d.count}x</Text>
-                        </View>
-                      ))}
-                    </View>
-                  </>
-                )}
-              </View>
-            )}
-
             {/* Drink counts */}
             <View style={{ flexDirection: 'row', marginTop: 20, gap: 16 }}>
               <StatBox label="Today" value={stats.today} period="today" />
@@ -489,38 +458,74 @@ export default function ProfileScreen({ route, navigation }: any) {
               <StatBox label="All Time" value={stats.allTime} period="allTime" />
             </View>
 
-            {/* Badges */}
-            {badges.length > 0 && (
-              <View style={{ width: '100%', marginTop: 20 }}>
-                <Text style={{ color: colors.electricBlue, fontSize: fonts.sizes.sm, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 }}>Badges</Text>
-                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-                  {badges.map((b, i) => {
-                    const def = BADGE_DEFS.find(d => d.type === b.badge_type && d.name === b.badge_name);
-                    return (
-                      <View key={i} style={{ backgroundColor: colors.card, borderRadius: 12, padding: 10, alignItems: 'center', width: 80, borderWidth: 1, borderColor: colors.cardBorder }}>
-                        <Text style={{ fontSize: 24 }}>{def?.emoji || '🏅'}</Text>
-                        <Text style={{ color: colors.text, fontSize: 10, fontWeight: '700', textAlign: 'center', marginTop: 4 }} numberOfLines={2}>{b.badge_name}</Text>
-                      </View>
-                    );
-                  })}
-                </View>
+            {/* Stats Toggle */}
+            <View style={{ width: '100%', marginTop: 20 }}>
+              <View style={{ flexDirection: 'row', backgroundColor: colors.surface, borderRadius: 12, padding: 3 }}>
+                {([['favorites', 'Favorites'], ['consumed', 'Most Consumed'], ['badges', 'Badges']] as const).map(([key, label]) => (
+                  <TouchableOpacity
+                    key={key}
+                    onPress={() => setStatsTab(key)}
+                    style={{ flex: 1, paddingVertical: 8, borderRadius: 10, backgroundColor: statsTab === key ? colors.electricBlue : 'transparent', alignItems: 'center' }}
+                  >
+                    <Text style={{ color: statsTab === key ? '#fff' : colors.textSecondary, fontSize: fonts.sizes.xs, fontWeight: '700' }}>{label}</Text>
+                  </TouchableOpacity>
+                ))}
               </View>
-            )}
 
-            {/* Unearned badges (own profile only) */}
-            {isOwnProfile && (
-              <View style={{ width: '100%', marginTop: 16 }}>
-                <Text style={{ color: colors.textMuted, fontSize: fonts.sizes.xs, fontWeight: '600', marginBottom: 8 }}>LOCKED BADGES</Text>
-                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-                  {BADGE_DEFS.filter(d => !badges.some(b => b.badge_type === d.type && b.badge_name === d.name)).map((d, i) => (
-                    <View key={i} style={{ backgroundColor: colors.surface, borderRadius: 12, padding: 10, alignItems: 'center', width: 80, opacity: 0.4 }}>
-                      <Text style={{ fontSize: 24 }}>🔒</Text>
-                      <Text style={{ color: colors.textMuted, fontSize: 10, fontWeight: '600', textAlign: 'center', marginTop: 4 }} numberOfLines={2}>{d.name}</Text>
-                    </View>
-                  ))}
+              {/* Favorites Tab */}
+              {statsTab === 'favorites' && userTopDrinks && (
+                <View style={{ marginTop: 12 }}>
+                  <View style={{ flexDirection: 'row', gap: 8 }}>
+                    {userTopDrinks.map((d: string, i: number) => (
+                      <View key={i} style={{ flex: 1, backgroundColor: colors.card, borderRadius: 12, padding: 12, alignItems: 'center', borderWidth: 1, borderColor: colors.cardBorder }}>
+                        <Text style={{ fontSize: 18, marginBottom: 4 }}>{['🥇', '🥈', '🥉'][i]}</Text>
+                        <Text style={{ color: colors.text, fontSize: 11, fontWeight: '600', textAlign: 'center' }} numberOfLines={2}>{d}</Text>
+                      </View>
+                    ))}
+                  </View>
                 </View>
-              </View>
-            )}
+              )}
+              {statsTab === 'favorites' && !userTopDrinks && (
+                <Text style={{ color: colors.textMuted, fontSize: fonts.sizes.xs, textAlign: 'center', marginTop: 16 }}>No favorite drinks set yet{isOwnProfile ? ' — edit your profile to add them!' : ''}</Text>
+              )}
+
+              {/* Most Consumed Tab */}
+              {statsTab === 'consumed' && topDrinksByConsumption.length > 0 && (
+                <View style={{ marginTop: 12 }}>
+                  <View style={{ flexDirection: 'row', gap: 8 }}>
+                    {topDrinksByConsumption.map((d, i) => (
+                      <View key={i} style={{ flex: 1, backgroundColor: colors.card, borderRadius: 12, padding: 12, alignItems: 'center', borderWidth: 1, borderColor: colors.cardBorder }}>
+                        <Text style={{ fontSize: 18, marginBottom: 4 }}>{['🥇', '🥈', '🥉'][i]}</Text>
+                        <Text style={{ color: colors.text, fontSize: 11, fontWeight: '600', textAlign: 'center' }} numberOfLines={2}>{d.name}</Text>
+                        <Text style={{ color: colors.textMuted, fontSize: 10, marginTop: 2 }}>{d.count}x</Text>
+                      </View>
+                    ))}
+                  </View>
+                </View>
+              )}
+              {statsTab === 'consumed' && topDrinksByConsumption.length === 0 && (
+                <Text style={{ color: colors.textMuted, fontSize: fonts.sizes.xs, textAlign: 'center', marginTop: 16 }}>No drinks logged yet</Text>
+              )}
+
+              {/* Badges Tab - one row, tap to expand */}
+              {statsTab === 'badges' && (
+                <TouchableOpacity onPress={() => setBadgeModalVisible(true)} activeOpacity={0.7} style={{ marginTop: 12 }}>
+                  <View style={{ flexDirection: 'row', gap: 8 }}>
+                    {(badges.length > 0 ? badges : BADGE_DEFS).slice(0, 4).map((b, i) => {
+                      const isEarned = badges.some(eb => eb.badge_type === (('badge_type' in b) ? b.badge_type : (b as any).type) && eb.badge_name === (('badge_name' in b) ? b.badge_name : (b as any).name));
+                      const def = BADGE_DEFS.find(d => d.type === (('badge_type' in b) ? b.badge_type : (b as any).type) && d.name === (('badge_name' in b) ? b.badge_name : (b as any).name));
+                      return (
+                        <View key={i} style={{ flex: 1, backgroundColor: isEarned ? colors.card : colors.surface, borderRadius: 12, padding: 10, alignItems: 'center', borderWidth: 1, borderColor: isEarned ? colors.cardBorder : 'transparent', opacity: isEarned ? 1 : 0.4 }}>
+                          <Text style={{ fontSize: 24 }}>{isEarned ? (def?.emoji || '🏅') : '🔒'}</Text>
+                          <Text style={{ color: isEarned ? colors.text : colors.textMuted, fontSize: 10, fontWeight: '700', textAlign: 'center', marginTop: 4 }} numberOfLines={2}>{('badge_name' in b) ? b.badge_name : (b as any).name}</Text>
+                        </View>
+                      );
+                    })}
+                  </View>
+                  <Text style={{ color: colors.electricBlue, fontSize: fonts.sizes.xs, textAlign: 'center', marginTop: 8, fontWeight: '600' }}>Tap to view all badges →</Text>
+                </TouchableOpacity>
+              )}
+            </View>
 
             {isOwnProfile && (
               <>
@@ -548,6 +553,46 @@ export default function ProfileScreen({ route, navigation }: any) {
         }
         contentContainerStyle={{ paddingBottom: 100 }}
       />
+
+      <Modal visible={badgeModalVisible} transparent animationType="slide" onRequestClose={() => setBadgeModalVisible(false)}>
+        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'flex-end' }}>
+          <View style={{ backgroundColor: colors.bg, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 20, paddingBottom: 40, borderTopWidth: 1, borderColor: colors.cardBorder, maxHeight: '85%' }}>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 16 }}>
+              <Text style={{ color: colors.text, fontSize: 18, fontWeight: '800' }}>🏅 All Badges</Text>
+              <TouchableOpacity onPress={() => setBadgeModalVisible(false)}><Text style={{ color: colors.textSecondary, fontSize: 20 }}>✕</Text></TouchableOpacity>
+            </View>
+            <ScrollView showsVerticalScrollIndicator={false}>
+              {badges.length > 0 && (
+                <>
+                  <Text style={{ color: colors.electricBlue, fontSize: 12, fontWeight: '700', marginBottom: 10, textTransform: 'uppercase' }}>Earned ({badges.length})</Text>
+                  <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 20 }}>
+                    {badges.map((b, i) => {
+                      const def = BADGE_DEFS.find(d => d.type === b.badge_type && d.name === b.badge_name);
+                      return (
+                        <View key={i} style={{ backgroundColor: colors.card, borderRadius: 12, padding: 12, alignItems: 'center', width: 100, borderWidth: 1, borderColor: colors.cardBorder }}>
+                          <Text style={{ fontSize: 28 }}>{def?.emoji || '🏅'}</Text>
+                          <Text style={{ color: colors.text, fontSize: 11, fontWeight: '700', textAlign: 'center', marginTop: 6 }} numberOfLines={2}>{b.badge_name}</Text>
+                          <Text style={{ color: colors.textMuted, fontSize: 9, textAlign: 'center', marginTop: 2 }} numberOfLines={2}>{def?.desc || ''}</Text>
+                        </View>
+                      );
+                    })}
+                  </View>
+                </>
+              )}
+              <Text style={{ color: colors.textMuted, fontSize: 12, fontWeight: '700', marginBottom: 10, textTransform: 'uppercase' }}>Locked</Text>
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+                {BADGE_DEFS.filter(d => !badges.some(b => b.badge_type === d.type && b.badge_name === d.name)).map((d, i) => (
+                  <View key={i} style={{ backgroundColor: colors.surface, borderRadius: 12, padding: 12, alignItems: 'center', width: 100, opacity: 0.5 }}>
+                    <Text style={{ fontSize: 28 }}>🔒</Text>
+                    <Text style={{ color: colors.textMuted, fontSize: 11, fontWeight: '700', textAlign: 'center', marginTop: 6 }} numberOfLines={2}>{d.name}</Text>
+                    <Text style={{ color: colors.textMuted, fontSize: 9, textAlign: 'center', marginTop: 2 }} numberOfLines={2}>{d.desc}</Text>
+                  </View>
+                ))}
+              </View>
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
 
       <Modal visible={breakdown !== null} transparent animationType="slide" onRequestClose={() => setBreakdown(null)}>
         <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'flex-end' }}>
