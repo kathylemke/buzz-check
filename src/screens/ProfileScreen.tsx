@@ -341,11 +341,16 @@ export default function ProfileScreen({ route, navigation }: any) {
               </TouchableOpacity>
             )}
 
-            {/* Edit profile toggle */}
+            {/* Edit profile + Sign Out row */}
             {isOwnProfile && (
-              <TouchableOpacity onPress={() => { setEditMode(!editMode); setCampusInput(profile?.campus || ''); setNewUsername(profile?.username || ''); setNewDisplayName(profile?.display_name || ''); setNewPassword(''); setEditMsg(''); }} style={{ marginTop: 8 }}>
-                <Text style={{ color: colors.electricBlue, fontSize: fonts.sizes.xs, fontWeight: '600' }}>{editMode ? 'Done' : '✏️ Edit Profile'}</Text>
-              </TouchableOpacity>
+              <View style={{ flexDirection: 'row', marginTop: 8, gap: 16, alignItems: 'center' }}>
+                <TouchableOpacity onPress={() => { setEditMode(!editMode); setCampusInput(profile?.campus || ''); setNewUsername(profile?.username || ''); setNewDisplayName(profile?.display_name || ''); setNewPassword(''); setEditMsg(''); }}>
+                  <Text style={{ color: colors.electricBlue, fontSize: fonts.sizes.xs, fontWeight: '600' }}>{editMode ? 'Done' : '✏️ Edit Profile'}</Text>
+                </TouchableOpacity>
+                <TouchableOpacity onPress={signOut}>
+                  <Text style={{ color: colors.danger, fontSize: fonts.sizes.xs, fontWeight: '600' }}>Sign Out</Text>
+                </TouchableOpacity>
+              </View>
             )}
 
             {/* Edit mode panel */}
@@ -548,11 +553,7 @@ export default function ProfileScreen({ route, navigation }: any) {
               )}
             </View>
 
-            {isOwnProfile && (
-              <TouchableOpacity style={{ marginTop: 20, paddingVertical: 8, paddingHorizontal: 20 }} onPress={signOut}>
-                <Text style={{ color: colors.danger, fontSize: fonts.sizes.sm, fontWeight: '600' }}>Sign Out</Text>
-              </TouchableOpacity>
-            )}
+            {/* Sign out moved to edit profile row */}
           </View>
         }
         contentContainerStyle={{ paddingBottom: 100 }}
