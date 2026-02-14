@@ -5,13 +5,15 @@ import { fonts } from '../theme';
 import { supabase } from '../lib/supabase';
 import { CITY_COORDINATES, CAMPUS_TO_CITY, CAMPUS_ABBREV, CITY_ABBREV } from '../data/cities';
 
+type DrinkEntry = { drink_name: string; username: string; user_id: string; created_at: string; rating: number | null; brand: string | null; is_local: boolean };
+
 type PinData = {
   name: string;
   abbrev: string;
   lat: number;
   lng: number;
   count: number;
-  drinks: { drink_name: string; username: string; created_at: string; rating: number | null }[];
+  drinks: DrinkEntry[];
 };
 
 type MapMode = 'campus';
@@ -142,6 +144,7 @@ export default function MapScreen() {
   const [pinData, setPinData] = useState<PinData[]>([]);
   const [selectedPin, setSelectedPin] = useState<PinData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [pinView, setPinView] = useState<'leaders' | 'drinks' | 'local'>('leaders');
   const mapMode: MapMode = 'campus';
 
   const fetchData = useCallback(async () => {
@@ -150,7 +153,7 @@ export default function MapScreen() {
 
     const { data: posts } = await supabase
       .from('bc_posts')
-      .select('drink_name, city, created_at, rating, user_id')
+      .select('drink_name, city, created_at, rating, user_id, brand, is_local')
       .not('city', 'is', null);
 
     if (!posts || posts.length === 0) {
@@ -186,8 +189,11 @@ export default function MapScreen() {
         grouped[campus].drinks.push({
           drink_name: p.drink_name,
           username: userMap[p.user_id] || '?',
+          user_id: p.user_id,
           created_at: p.created_at,
           rating: p.rating,
+          brand: p.brand || null,
+          is_local: p.is_local || false,
         });
       }
       for (const pin of Object.values(grouped)) {
@@ -243,36 +249,84 @@ export default function MapScreen() {
             )}
           </View>
 
-          {selectedPin && (
-            <View style={{ flex: 0.45 }}>
-              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-                <Text style={{ color: colors.text, fontSize: fonts.sizes.lg, fontWeight: '800' }}>
-                  📍 {selectedPin.name}
+          {selectedPin && (() => {
+            // Compute leaders
+            const userCounts: Record<string, { username: string; count: number }> = {};
+            selectedPin.drinks.forEach(d => {
+              if (!userCounts[d.user_id]) userCounts[d.user_id] = { username: d.username, count: 0 };
+              userCounts[d.user_id].count++;
+            });
+            const leaders = Object.values(userCounts).sort((a, b) => b.count - a.count);
+
+            // Compute popular drinks
+            const drinkCounts: Record<string, number> = {};
+            selectedPin.drinks.forEach(d => {
+              drinkCounts[d.drink_name] = (drinkCounts[d.drink_name] || 0) + 1;
+            });
+            const popularDrinks = Object.entries(drinkCounts).sort((a, b) => b[1] - a[1]).map(([name, count]) => ({ name, count }));
+
+            // Compute local shops
+            const shopCounts: Record<string, number> = {};
+            selectedPin.drinks.filter(d => d.is_local && d.brand).forEach(d => {
+              shopCounts[d.brand!] = (shopCounts[d.brand!] || 0) + 1;
+            });
+            const localShops = Object.entries(shopCounts).sort((a, b) => b[1] - a[1]).map(([name, count]) => ({ name, count }));
+
+            const medals = ['🥇', '🥈', '🥉'];
+
+            return (
+              <View style={{ flex: 0.45 }}>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                  <Text style={{ color: colors.text, fontSize: fonts.sizes.lg, fontWeight: '800' }}>
+                    📍 {selectedPin.name}
+                  </Text>
+                  <TouchableOpacity onPress={() => { setSelectedPin(null); setPinView('leaders'); }}>
+                    <Text style={{ color: colors.textSecondary, fontSize: 18 }}>✕</Text>
+                  </TouchableOpacity>
+                </View>
+                <Text style={{ color: colors.neonGreen, fontWeight: '700', marginBottom: 6, fontSize: fonts.sizes.xs }}>
+                  {selectedPin.count} drink{selectedPin.count !== 1 ? 's' : ''} checked in
                 </Text>
-                <TouchableOpacity onPress={() => setSelectedPin(null)}>
-                  <Text style={{ color: colors.textSecondary, fontSize: 18 }}>✕</Text>
-                </TouchableOpacity>
-              </View>
-              <Text style={{ color: colors.neonGreen, fontWeight: '700', marginBottom: 8 }}>
-                {selectedPin.count} drink{selectedPin.count !== 1 ? 's' : ''} checked in
-              </Text>
-              <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false}>
-                {selectedPin.drinks.map((d, i) => (
-                  <View key={i} style={[s.drinkRow, { backgroundColor: colors.surface, borderColor: colors.cardBorder }]}>
-                    <View style={{ flex: 1 }}>
-                      <Text style={{ color: colors.text, fontWeight: '600', fontSize: fonts.sizes.md }}>{d.drink_name}</Text>
-                      <Text style={{ color: colors.textMuted, fontSize: fonts.sizes.xs }}>by {d.username}</Text>
+
+                {/* Toggle: Leaders / Drinks / Local */}
+                <View style={[s.toggleRow, { backgroundColor: colors.surface, marginHorizontal: 0 }]}>
+                  {([['leaders', '👑 Leaders'], ['drinks', '🥤 Drinks'], ['local', '🏪 Local']] as const).map(([key, label]) => (
+                    <TouchableOpacity key={key} style={[s.toggleBtn, pinView === key && { backgroundColor: colors.electricBlue }]} onPress={() => setPinView(key)}>
+                      <Text style={[s.toggleText, { color: colors.textMuted }, pinView === key && { color: '#fff' }]}>{label}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+
+                <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false}>
+                  {pinView === 'leaders' && leaders.map((l, i) => (
+                    <View key={i} style={[s.drinkRow, { backgroundColor: colors.surface, borderColor: colors.cardBorder }]}>
+                      <Text style={{ fontSize: 16, width: 30, textAlign: 'center' }}>{i < 3 ? medals[i] : `#${i + 1}`}</Text>
+                      <Text style={{ color: colors.text, fontWeight: '600', fontSize: fonts.sizes.md, flex: 1 }}>{l.username}</Text>
+                      <Text style={{ color: colors.neonGreen, fontWeight: '800', fontSize: fonts.sizes.md }}>{l.count}</Text>
                     </View>
-                    {d.rating && (
-                      <Text style={{ color: colors.electricBlue, fontWeight: '700', fontSize: fonts.sizes.sm }}>
-                        {d.rating}/10
-                      </Text>
-                    )}
-                  </View>
-                ))}
-              </ScrollView>
-            </View>
-          )}
+                  ))}
+
+                  {pinView === 'drinks' && popularDrinks.map((d, i) => (
+                    <View key={i} style={[s.drinkRow, { backgroundColor: colors.surface, borderColor: colors.cardBorder }]}>
+                      <Text style={{ fontSize: 16, width: 30, textAlign: 'center' }}>{i < 3 ? medals[i] : `#${i + 1}`}</Text>
+                      <Text style={{ color: colors.text, fontWeight: '600', fontSize: fonts.sizes.md, flex: 1 }} numberOfLines={1}>{d.name}</Text>
+                      <Text style={{ color: colors.neonGreen, fontWeight: '800', fontSize: fonts.sizes.md }}>{d.count}</Text>
+                    </View>
+                  ))}
+
+                  {pinView === 'local' && (localShops.length > 0 ? localShops.map((shop, i) => (
+                    <View key={i} style={[s.drinkRow, { backgroundColor: colors.surface, borderColor: colors.cardBorder }]}>
+                      <Text style={{ fontSize: 16, width: 30, textAlign: 'center' }}>{i < 3 ? medals[i] : `#${i + 1}`}</Text>
+                      <Text style={{ color: colors.text, fontWeight: '600', fontSize: fonts.sizes.md, flex: 1 }}>{shop.name}</Text>
+                      <Text style={{ color: colors.neonGreen, fontWeight: '800', fontSize: fonts.sizes.md }}>{shop.count}</Text>
+                    </View>
+                  )) : (
+                    <Text style={{ color: colors.textMuted, textAlign: 'center', marginTop: 20, fontSize: fonts.sizes.sm }}>No local shops checked in yet</Text>
+                  ))}
+                </ScrollView>
+              </View>
+            );
+          })()}
         </View>
       )}
     </View>
