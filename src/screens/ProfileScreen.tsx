@@ -249,8 +249,8 @@ export default function ProfileScreen({ route, navigation }: any) {
           <View style={{ alignItems: 'center', paddingTop: 60, paddingBottom: 20, paddingHorizontal: 16 }}>
             {/* Back button for viewing others */}
             {!isOwnProfile && (
-              <TouchableOpacity onPress={() => navigation.goBack()} style={{ position: 'absolute', top: 60, left: 16 }}>
-                <Text style={{ color: colors.electricBlue, fontSize: fonts.sizes.md, fontWeight: '600' }}>← Back</Text>
+              <TouchableOpacity onPress={() => navigation.goBack()} style={{ position: 'absolute', top: 16, left: 16, zIndex: 10, backgroundColor: colors.surface, borderRadius: 20, width: 36, height: 36, justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: colors.cardBorder }}>
+                <Text style={{ color: colors.text, fontSize: 18, fontWeight: '700', marginTop: -1 }}>←</Text>
               </TouchableOpacity>
             )}
 
