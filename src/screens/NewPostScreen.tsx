@@ -292,7 +292,8 @@ export default function NewPostScreen({ navigation }: any) {
                   setNewPlaceName('');
                   setLocalStep('item');
                 } else {
-                  if (Platform.OS === 'web') window.alert('Error adding place'); else alert('Error adding place');
+                  const msg = error ? error.message : 'Unknown error';
+                  if (Platform.OS === 'web') window.alert('Error adding place: ' + msg); else alert('Error adding place: ' + msg);
                 }
               }}
             >
