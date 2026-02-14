@@ -1,5 +1,5 @@
-import React from 'react';
-import { View } from 'react-native';
+import React, { useRef, useEffect } from 'react';
+import { View, Platform } from 'react-native';
 
 type Props = {
   badgeName: string;
@@ -147,13 +147,18 @@ function renderShape(shapeStr: string, s: number, fillColor: string, strokeColor
 
 export default function BadgeIcon({ badgeName, size = 48, locked = false }: Props) {
   const config = badgeConfigs[badgeName];
+  const containerRef = useRef<any>(null);
+
   if (!config) {
     // fallback
-    return (
-      <View style={{ width: size, height: size, borderRadius: size/2, backgroundColor: locked ? '#555' : '#718096', justifyContent: 'center', alignItems: 'center' }}>
-        <View dangerouslySetInnerHTML={{ __html: `<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}"><circle cx="${size/2}" cy="${size/2}" r="${size*0.4}" fill="${locked ? '#555' : '#718096'}" stroke="${locked ? '#444' : '#5A6577'}" stroke-width="${size*0.03}"/><text x="${size/2}" y="${size*0.58}" text-anchor="middle" fill="white" font-size="${size*0.35}" font-weight="bold">?</text></svg>` } as any} />
-      </View>
-    );
+    const fallbackRef = useRef<any>(null);
+    useEffect(() => {
+      if (Platform.OS === 'web' && fallbackRef.current) {
+        const el = fallbackRef.current as unknown as HTMLElement;
+        el.innerHTML = `<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}"><circle cx="${size/2}" cy="${size/2}" r="${size*0.4}" fill="${locked ? '#555' : '#718096'}" stroke="${locked ? '#444' : '#5A6577'}" stroke-width="${size*0.03}"/><text x="${size/2}" y="${size*0.58}" text-anchor="middle" fill="white" font-size="${size*0.35}" font-weight="bold">?</text></svg>`;
+      }
+    }, [size, locked]);
+    return <View ref={fallbackRef} style={{ width: size, height: size }} />;
   }
 
   const s = size;
@@ -190,9 +195,12 @@ export default function BadgeIcon({ badgeName, size = 48, locked = false }: Prop
     ${lockSvg}
   </svg>`;
 
-  return (
-    <View style={{ width: size, height: size }}>
-      <div dangerouslySetInnerHTML={{ __html: svgContent }} />
-    </View>
-  );
+  useEffect(() => {
+    if (Platform.OS === 'web' && containerRef.current) {
+      const el = containerRef.current as unknown as HTMLElement;
+      el.innerHTML = svgContent;
+    }
+  }, [svgContent]);
+
+  return <View ref={containerRef} style={{ width: size, height: size }} />;
 }
