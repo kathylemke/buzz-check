@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Platform } from 'react-native';
 import { useTheme } from '../contexts/ThemeContext';
 import { fonts } from '../theme';
@@ -13,17 +13,15 @@ type CityData = {
   drinks: { drink_name: string; username: string; created_at: string; rating: number | null }[];
 };
 
-function MapInner({ cityData, onPinClick, colors }: { cityData: CityData[]; onPinClick: (city: CityData) => void; colors: any }) {
-  if (Platform.OS !== 'web') {
-    return <Text style={{ color: colors.textMuted, textAlign: 'center', marginTop: 40 }}>Map is only available on web</Text>;
-  }
-
-  // Dynamic imports for web only
-  const [MapComponents, setMapComponents] = useState<any>(null);
+function WebMap({ cityData, onPinClick, colors }: { cityData: CityData[]; onPinClick: (city: CityData) => void; colors: any }) {
+  const mapRef = useRef<any>(null);
+  const containerRef = useRef<any>(null);
 
   useEffect(() => {
-    // Inject leaflet CSS
-    if (typeof document !== 'undefined' && !document.getElementById('leaflet-css')) {
+    if (typeof window === 'undefined') return;
+
+    // Load leaflet CSS
+    if (!document.getElementById('leaflet-css')) {
       const link = document.createElement('link');
       link.id = 'leaflet-css';
       link.rel = 'stylesheet';
@@ -31,59 +29,82 @@ function MapInner({ cityData, onPinClick, colors }: { cityData: CityData[]; onPi
       document.head.appendChild(link);
     }
 
-    // Dynamic import
-    Promise.all([
-      import('react-leaflet'),
-      import('leaflet'),
-    ]).then(([rl, L]) => {
-      setMapComponents({ ...rl, L: L.default || L });
-    }).catch(err => console.error('Failed to load map:', err));
-  }, []);
+    // Load leaflet JS
+    const loadLeaflet = (): Promise<any> => {
+      if ((window as any).L) return Promise.resolve((window as any).L);
+      return new Promise((resolve, reject) => {
+        if (document.getElementById('leaflet-js')) {
+          // Already loading, wait for it
+          const check = setInterval(() => {
+            if ((window as any).L) { clearInterval(check); resolve((window as any).L); }
+          }, 100);
+          setTimeout(() => { clearInterval(check); reject('timeout'); }, 10000);
+          return;
+        }
+        const script = document.createElement('script');
+        script.id = 'leaflet-js';
+        script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
+        script.onload = () => resolve((window as any).L);
+        script.onerror = reject;
+        document.head.appendChild(script);
+      });
+    };
 
-  if (!MapComponents) {
-    return <Text style={{ color: colors.textMuted, textAlign: 'center', marginTop: 40 }}>Loading map...</Text>;
-  }
+    let cancelled = false;
+    loadLeaflet().then(L => {
+      if (cancelled || !containerRef.current) return;
 
-  const { MapContainer, TileLayer, CircleMarker, Tooltip } = MapComponents;
-  const maxCount = Math.max(...cityData.map(c => c.count), 1);
+      // Clean up existing map
+      if (mapRef.current) {
+        mapRef.current.remove();
+        mapRef.current = null;
+      }
+
+      const map = L.map(containerRef.current).setView([39.5, -98.35], 4);
+      mapRef.current = map;
+
+      L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+        attribution: '&copy; OSM',
+      }).addTo(map);
+
+      const maxCount = Math.max(...cityData.map(c => c.count), 1);
+
+      cityData.forEach(city => {
+        const radius = 10 + (city.count / maxCount) * 30;
+        const marker = L.circleMarker([city.lat, city.lng], {
+          radius,
+          fillColor: colors.neonGreen,
+          fillOpacity: 0.6,
+          color: colors.neonGreen,
+          weight: 2,
+        }).addTo(map);
+
+        marker.bindTooltip(`<div style="text-align:center;font-weight:bold">${city.city}<br/>${city.count} drink${city.count !== 1 ? 's' : ''}</div>`, {
+          direction: 'top',
+          offset: [0, -radius],
+        });
+
+        marker.on('click', () => onPinClick(city));
+      });
+
+      // Force a resize after render
+      setTimeout(() => map.invalidateSize(), 100);
+    }).catch(err => console.error('Leaflet load failed:', err));
+
+    return () => {
+      cancelled = true;
+      if (mapRef.current) {
+        mapRef.current.remove();
+        mapRef.current = null;
+      }
+    };
+  }, [cityData, colors.neonGreen]);
 
   return (
-    <div style={{ width: '100%', height: '100%' }}>
-      <MapContainer
-        center={[39.5, -98.35]}
-        zoom={4}
-        style={{ width: '100%', height: '100%', borderRadius: 16 }}
-        scrollWheelZoom={true}
-      >
-        <TileLayer
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a>'
-          url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
-        />
-        {cityData.map(city => {
-          const radius = 10 + (city.count / maxCount) * 30;
-          return (
-            <CircleMarker
-              key={city.city}
-              center={[city.lat, city.lng]}
-              radius={radius}
-              pathOptions={{
-                fillColor: colors.neonGreen,
-                fillOpacity: 0.6,
-                color: colors.neonGreen,
-                weight: 2,
-              }}
-              eventHandlers={{ click: () => onPinClick(city) }}
-            >
-              <Tooltip direction="top" offset={[0, -radius]} opacity={0.95}>
-                <div style={{ textAlign: 'center', fontWeight: 'bold' }}>
-                  {city.city}<br />{city.count} drink{city.count !== 1 ? 's' : ''}
-                </div>
-              </Tooltip>
-            </CircleMarker>
-          );
-        })}
-      </MapContainer>
-    </div>
+    <div
+      ref={containerRef}
+      style={{ width: '100%', height: '100%', borderRadius: 16 }}
+    />
   );
 }
 
@@ -95,7 +116,6 @@ export default function MapScreen() {
 
   const fetchData = useCallback(async () => {
     setLoading(true);
-    // Get all posts with city
     const { data: posts } = await supabase
       .from('bc_posts')
       .select('drink_name, city, created_at, rating, user_id')
@@ -107,13 +127,11 @@ export default function MapScreen() {
       return;
     }
 
-    // Get usernames
     const userIds = [...new Set(posts.map(p => p.user_id))];
     const { data: users } = await supabase.from('bc_users').select('id, username').in('id', userIds);
     const userMap: Record<string, string> = {};
     (users || []).forEach(u => { userMap[u.id] = u.username; });
 
-    // Group by city
     const grouped: Record<string, CityData> = {};
     for (const p of posts) {
       if (!p.city) continue;
@@ -131,7 +149,6 @@ export default function MapScreen() {
       });
     }
 
-    // Sort drinks within each city by most recent
     for (const city of Object.values(grouped)) {
       city.drinks.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
     }
@@ -153,7 +170,11 @@ export default function MapScreen() {
       ) : (
         <View style={{ flex: 1, paddingHorizontal: 16 }}>
           <View style={{ flex: selectedCity ? 0.55 : 1, borderRadius: 16, overflow: 'hidden', marginBottom: 8 }}>
-            <MapInner cityData={cityData} onPinClick={setSelectedCity} colors={colors} />
+            {Platform.OS === 'web' ? (
+              <WebMap cityData={cityData} onPinClick={setSelectedCity} colors={colors} />
+            ) : (
+              <Text style={{ color: colors.textMuted, textAlign: 'center', marginTop: 40 }}>Map is only available on web</Text>
+            )}
           </View>
 
           {selectedCity && (
