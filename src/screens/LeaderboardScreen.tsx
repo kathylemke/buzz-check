@@ -18,6 +18,7 @@ export default function LeaderboardScreen({ navigation }: any) {
   const [period, setPeriod] = useState<Period>('week');
   const [boardType, setBoardType] = useState<BoardType>('campus');
   const [categoryFilter, setCategoryFilter] = useState<DrinkCategory | null>(null);
+  const [catDropdownOpen, setCatDropdownOpen] = useState(false);
   const [totals, setTotals] = useState<TotalEntry[]>([]);
   const [drilldown, setDrilldown] = useState<string | null>(null); // name of campus/city drilled into
   const [drilldownUsers, setDrilldownUsers] = useState<LeaderEntry[]>([]);
@@ -137,26 +138,39 @@ export default function LeaderboardScreen({ navigation }: any) {
         ))}
       </View>
 
-      {/* Drink category filter */}
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginHorizontal: 16, marginBottom: 8 }}>
+      {/* Drink category filter dropdown */}
+      <View style={{ marginHorizontal: 16, marginBottom: 8 }}>
         <TouchableOpacity
-          style={[s.categoryChip, !categoryFilter && { backgroundColor: colors.electricBlue }]}
-          onPress={() => setCategoryFilter(null)}
+          style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: colors.surface, borderRadius: 10, padding: 12, borderWidth: 1, borderColor: colors.cardBorder }}
+          onPress={() => setCatDropdownOpen(!catDropdownOpen)}
         >
-          <Text style={[s.toggleText, { color: colors.textMuted }, !categoryFilter && { color: '#fff' }]}>🍹 All</Text>
+          <Text style={{ color: categoryFilter ? colors.text : colors.textMuted, fontWeight: '600', fontSize: fonts.sizes.sm }}>
+            {categoryFilter ? `${DRINK_CATEGORIES.find(c => c.key === categoryFilter)?.emoji} ${DRINK_CATEGORIES.find(c => c.key === categoryFilter)?.label}` : '🍹 All Drinks'}
+          </Text>
+          <Text style={{ color: colors.textMuted, fontSize: 12 }}>{catDropdownOpen ? '▲' : '▼'}</Text>
         </TouchableOpacity>
-        {DRINK_CATEGORIES.map(cat => (
-          <TouchableOpacity
-            key={cat.key}
-            style={[s.categoryChip, categoryFilter === cat.key && { backgroundColor: colors.electricBlue }]}
-            onPress={() => setCategoryFilter(categoryFilter === cat.key ? null : cat.key)}
-          >
-            <Text style={[s.toggleText, { color: colors.textMuted }, categoryFilter === cat.key && { color: '#fff' }]} numberOfLines={1}>
-              {cat.emoji} {cat.label}
-            </Text>
-          </TouchableOpacity>
-        ))}
-      </ScrollView>
+        {catDropdownOpen && (
+          <View style={{ backgroundColor: colors.surface, borderRadius: 10, marginTop: 4, borderWidth: 1, borderColor: colors.cardBorder, overflow: 'hidden' }}>
+            <TouchableOpacity
+              style={{ padding: 12, backgroundColor: !categoryFilter ? colors.electricBlue + '22' : 'transparent' }}
+              onPress={() => { setCategoryFilter(null); setCatDropdownOpen(false); }}
+            >
+              <Text style={{ color: !categoryFilter ? colors.electricBlue : colors.text, fontWeight: '600', fontSize: fonts.sizes.sm }}>🍹 All Drinks</Text>
+            </TouchableOpacity>
+            {DRINK_CATEGORIES.map(cat => (
+              <TouchableOpacity
+                key={cat.key}
+                style={{ padding: 12, backgroundColor: categoryFilter === cat.key ? colors.electricBlue + '22' : 'transparent' }}
+                onPress={() => { setCategoryFilter(cat.key); setCatDropdownOpen(false); }}
+              >
+                <Text style={{ color: categoryFilter === cat.key ? colors.electricBlue : colors.text, fontWeight: '600', fontSize: fonts.sizes.sm }}>
+                  {cat.emoji} {cat.label}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        )}
+      </View>
 
       {/* Drilldown back button */}
       {drilldown && (
