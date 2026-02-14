@@ -1,4 +1,4 @@
-# ⚡ Buzz Check
+# 🥃 L.I.D. - Li-quid I drank
 
 Social check-in app for energy drinks, protein shakes, coffee, and pre-workout — like Untappd but for your daily fuel.
 

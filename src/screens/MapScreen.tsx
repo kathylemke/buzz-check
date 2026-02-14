@@ -144,7 +144,7 @@ export default function MapScreen() {
 
   return (
     <View style={[s.container, { backgroundColor: colors.bg }]}>
-      <Text style={[s.title, { color: colors.neonGreen }]}>🗺️ Buzz Map</Text>
+      <Text style={[s.title, { color: colors.neonGreen }]}>🗺️ L.I.D. Map</Text>
 
       {loading ? (
         <Text style={{ color: colors.textMuted, textAlign: 'center', marginTop: 60 }}>Loading...</Text>

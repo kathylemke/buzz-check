@@ -309,7 +309,7 @@ export default function ProfileScreen({ route, navigation }: any) {
               {isOwnProfile && (
                 <TouchableOpacity
                   onPress={async () => {
-                    const msg = 'Check out Buzz Check! Track your drinks and compete with friends 🏆 https://kathylemke.github.io/buzz-check';
+                    const msg = 'Check out L.I.D. - Li-quid I drank! Track your drinks and compete with friends 🏆 https://kathylemke.github.io/buzz-check';
                     if (Platform.OS === 'web' && navigator.share) {
                       try { await navigator.share({ text: msg }); } catch {}
                     } else if (Platform.OS === 'web' && navigator.clipboard) {
